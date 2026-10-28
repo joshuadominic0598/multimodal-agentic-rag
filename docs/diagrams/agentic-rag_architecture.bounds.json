@@ -1,0 +1,807 @@
+[
+  {
+    "text": "SERVICES  /  MODELS  /  TOOL CALLS  /  CONTEXT  /  FEEDBACK",
+    "x": 85,
+    "y": 45,
+    "width": 633.0,
+    "height": 26.0
+  },
+  {
+    "text": "Agentic RAG",
+    "x": 185,
+    "y": 80,
+    "width": 402.0,
+    "height": 84.5
+  },
+  {
+    "text": "Document Knowledge Studio",
+    "x": 185,
+    "y": 163,
+    "width": 415.0,
+    "height": 41.6
+  },
+  {
+    "text": "DESKTOP APP + YOUR EXISTING AZURE",
+    "x": 2601.015625,
+    "y": 102,
+    "width": 497.96875,
+    "height": 32.5
+  },
+  {
+    "text": "01  DOCUMENT INGESTION, FIELD CONFIGURATION & INDEXING",
+    "x": 100,
+    "y": 242,
+    "width": 723.96875,
+    "height": 29.900000000000002
+  },
+  {
+    "text": "\u25c8",
+    "x": 139.0,
+    "y": 356,
+    "width": 20.0,
+    "height": 33.800000000000004
+  },
+  {
+    "text": "Source library",
+    "x": 198,
+    "y": 352,
+    "width": 220.0,
+    "height": 42.9
+  },
+  {
+    "text": "PDF \u00b7 Word \u00b7 Excel \u00b7 HTML",
+    "x": 128,
+    "y": 420,
+    "width": 307.0,
+    "height": 32.5
+  },
+  {
+    "text": "Code \u00b7 repositories \u00b7 notebooks",
+    "x": 128,
+    "y": 459,
+    "width": 352.0,
+    "height": 32.5
+  },
+  {
+    "text": "Images \u00b7 audio \u00b7 video",
+    "x": 128,
+    "y": 498,
+    "width": 250.0,
+    "height": 32.5
+  },
+  {
+    "text": "Originals copied to local storage",
+    "x": 128,
+    "y": 537,
+    "width": 361.0,
+    "height": 32.5
+  },
+  {
+    "text": "Extraction",
+    "x": 758,
+    "y": 352,
+    "width": 160.0,
+    "height": 42.9
+  },
+  {
+    "text": "Local parsers + saved outputs",
+    "x": 688,
+    "y": 420,
+    "width": 339.0,
+    "height": 32.5
+  },
+  {
+    "text": "OR Azure Document Intelligence",
+    "x": 688,
+    "y": 459,
+    "width": 367.984375,
+    "height": 32.5
+  },
+  {
+    "text": "prebuilt-layout \u2192 raw JSON",
+    "x": 688,
+    "y": 498,
+    "width": 312.0,
+    "height": 32.5
+  },
+  {
+    "text": "Audio / video \u2192 text transcripts",
+    "x": 688,
+    "y": 537,
+    "width": 351.0,
+    "height": 32.5
+  },
+  {
+    "text": "Element inventory",
+    "x": 1388,
+    "y": 352,
+    "width": 283.0,
+    "height": 42.9
+  },
+  {
+    "text": "Text \u00b7 titles \u00b7 headers \u00b7 tables",
+    "x": 1318,
+    "y": 420,
+    "width": 326.953125,
+    "height": 32.5
+  },
+  {
+    "text": "Figures \u00b7 images \u00b7 source regions",
+    "x": 1318,
+    "y": 459,
+    "width": 376.0,
+    "height": 32.5
+  },
+  {
+    "text": "Pages \u00b7 sheets \u00b7 file paths \u00b7 times",
+    "x": 1318,
+    "y": 498,
+    "width": 376.0,
+    "height": 32.5
+  },
+  {
+    "text": "Inspect originals and coverage",
+    "x": 1318,
+    "y": 537,
+    "width": 344.0,
+    "height": 32.5
+  },
+  {
+    "text": "Prepare & chunk",
+    "x": 2018,
+    "y": 352,
+    "width": 260.0,
+    "height": 42.9
+  },
+  {
+    "text": "Preprocessing + five chunk strategies",
+    "x": 1948,
+    "y": 420,
+    "width": 423.0,
+    "height": 32.5
+  },
+  {
+    "text": "Agentic boundaries preserve source text",
+    "x": 1948,
+    "y": 459,
+    "width": 453.0,
+    "height": 32.5
+  },
+  {
+    "text": "Search / filter / sort / return flags",
+    "x": 1948,
+    "y": 498,
+    "width": 359.0,
+    "height": 32.5
+  },
+  {
+    "text": "Index tags + immutable provenance",
+    "x": 1948,
+    "y": 537,
+    "width": 402.0,
+    "height": 32.5
+  },
+  {
+    "text": "Embedding choice",
+    "x": 2738,
+    "y": 353,
+    "width": 288.0,
+    "height": 41.6
+  },
+  {
+    "text": "TEXT: EmbeddingGemma / Qwen3 4B",
+    "x": 2668,
+    "y": 420,
+    "width": 432.953125,
+    "height": 32.5
+  },
+  {
+    "text": "Also local BGE / provider text models",
+    "x": 2668,
+    "y": 459,
+    "width": 419.0,
+    "height": 32.5
+  },
+  {
+    "text": "PIXELS: CLIP / Azure Vision / Gemini",
+    "x": 2668,
+    "y": 498,
+    "width": 423.984375,
+    "height": 32.5
+  },
+  {
+    "text": "Tables: extracted rows or visual pixels",
+    "x": 2668,
+    "y": 537,
+    "width": 428.953125,
+    "height": 32.5
+  },
+  {
+    "text": "One pinned embedding space per index",
+    "x": 2668,
+    "y": 576,
+    "width": 448.0,
+    "height": 32.5
+  },
+  {
+    "text": "import",
+    "x": 567.0,
+    "y": 423,
+    "width": 56.0,
+    "height": 26.0
+  },
+  {
+    "text": "extract",
+    "x": 1194.5,
+    "y": 423,
+    "width": 61.0,
+    "height": 26.0
+  },
+  {
+    "text": "review",
+    "x": 1826.5,
+    "y": 423,
+    "width": 57.0,
+    "height": 26.0
+  },
+  {
+    "text": "embed",
+    "x": 2539.5,
+    "y": 423,
+    "width": 61.0,
+    "height": 26.0
+  },
+  {
+    "text": "Versioned retrieval index",
+    "x": 1348,
+    "y": 772,
+    "width": 387.96875,
+    "height": 42.9
+  },
+  {
+    "text": "Local: SQLite FTS5 / BM25 + dense vectors   |   Azure: AI Search + HNSW",
+    "x": 1278,
+    "y": 840,
+    "width": 839.96875,
+    "height": 32.5
+  },
+  {
+    "text": "metadata",
+    "x": 1598.0,
+    "y": 675,
+    "width": 84.0,
+    "height": 26.0
+  },
+  {
+    "text": "vectors + field schema",
+    "x": 2629.5,
+    "y": 773,
+    "width": 201.0,
+    "height": 26.0
+  },
+  {
+    "text": "Private Blob sources are optional. Cloud services are connected, never provisioned by Agentic RAG.",
+    "x": 1250,
+    "y": 903,
+    "width": 960.984375,
+    "height": 27.3
+  },
+  {
+    "text": "02  LIVE AGENT, CONTEXT MANAGEMENT & MODEL CALLS",
+    "x": 100,
+    "y": 987,
+    "width": 665.953125,
+    "height": 29.900000000000002
+  },
+  {
+    "text": "\u25c8",
+    "x": 139.0,
+    "y": 1176,
+    "width": 20.0,
+    "height": 33.800000000000004
+  },
+  {
+    "text": "User",
+    "x": 198,
+    "y": 1174,
+    "width": 68.0,
+    "height": 40.300000000000004
+  },
+  {
+    "text": "Questions",
+    "x": 128,
+    "y": 1240,
+    "width": 114.0,
+    "height": 32.5
+  },
+  {
+    "text": "Clarifications",
+    "x": 128,
+    "y": 1279,
+    "width": 146.0,
+    "height": 32.5
+  },
+  {
+    "text": "\u25c8",
+    "x": 529.0,
+    "y": 1126,
+    "width": 20.0,
+    "height": 33.800000000000004
+  },
+  {
+    "text": "Knowledge Studio",
+    "x": 588,
+    "y": 1125,
+    "width": 259.0,
+    "height": 39.0
+  },
+  {
+    "text": "Vanilla JavaScript + CSS",
+    "x": 518,
+    "y": 1190,
+    "width": 283.96875,
+    "height": 32.5
+  },
+  {
+    "text": "Import \u00b7 configure \u00b7 inspect",
+    "x": 518,
+    "y": 1229,
+    "width": 300.0,
+    "height": 32.5
+  },
+  {
+    "text": "Research \u00b7 evaluate \u00b7 monitor",
+    "x": 518,
+    "y": 1268,
+    "width": 332.0,
+    "height": 32.5
+  },
+  {
+    "text": "Citations + original source links",
+    "x": 518,
+    "y": 1307,
+    "width": 352.0,
+    "height": 32.5
+  },
+  {
+    "text": "Research Agent",
+    "x": 1300,
+    "y": 1098,
+    "width": 317.96875,
+    "height": 54.6
+  },
+  {
+    "text": "Clarify \u2192 plan \u2192 filtered hybrid search \u2192 inspect \u2192 assess \u2192 cited answer",
+    "x": 1150,
+    "y": 1167,
+    "width": 1021.0,
+    "height": 36.4
+  },
+  {
+    "text": "Context & memory",
+    "x": 1172,
+    "y": 1251,
+    "width": 259.0,
+    "height": 37.7
+  },
+  {
+    "text": "Recent turns + scoped preferences",
+    "x": 1172,
+    "y": 1303,
+    "width": 338.0,
+    "height": 28.6
+  },
+  {
+    "text": "Low / medium / high investigation",
+    "x": 1172,
+    "y": 1340,
+    "width": 321.0,
+    "height": 28.6
+  },
+  {
+    "text": "User cap \u2192 bounded input packets",
+    "x": 1172,
+    "y": 1377,
+    "width": 339.0,
+    "height": 28.6
+  },
+  {
+    "text": "Search tools",
+    "x": 1622,
+    "y": 1251,
+    "width": 174.0,
+    "height": 37.7
+  },
+  {
+    "text": "Keyword / BM25 + dense vectors",
+    "x": 1622,
+    "y": 1303,
+    "width": 320.0,
+    "height": 28.6
+  },
+  {
+    "text": "RRF fusion + typed metadata filters",
+    "x": 1622,
+    "y": 1340,
+    "width": 341.0,
+    "height": 28.6
+  },
+  {
+    "text": "Pinned document + index scope",
+    "x": 1622,
+    "y": 1377,
+    "width": 310.0,
+    "height": 28.6
+  },
+  {
+    "text": "Inspect & assess",
+    "x": 2072,
+    "y": 1251,
+    "width": 235.0,
+    "height": 37.7
+  },
+  {
+    "text": "Original visuals + extracted rows",
+    "x": 2072,
+    "y": 1303,
+    "width": 314.0,
+    "height": 28.6
+  },
+  {
+    "text": "Timestamps + exact source citations",
+    "x": 2072,
+    "y": 1340,
+    "width": 351.984375,
+    "height": 28.6
+  },
+  {
+    "text": "Optional labeled image generation",
+    "x": 2072,
+    "y": 1377,
+    "width": 330.0,
+    "height": 28.6
+  },
+  {
+    "text": "Model connections",
+    "x": 2738,
+    "y": 1103,
+    "width": 295.0,
+    "height": 41.6
+  },
+  {
+    "text": "Gemini API: free / paid account",
+    "x": 2668,
+    "y": 1170,
+    "width": 349.984375,
+    "height": 32.5
+  },
+  {
+    "text": "OpenAI platform API key",
+    "x": 2668,
+    "y": 1209,
+    "width": 277.984375,
+    "height": 32.5
+  },
+  {
+    "text": "Groq API: free / paid account",
+    "x": 2668,
+    "y": 1248,
+    "width": 324.984375,
+    "height": 32.5
+  },
+  {
+    "text": "Local Ollama: Qwen3 8B default",
+    "x": 2668,
+    "y": 1287,
+    "width": 362.0,
+    "height": 32.5
+  },
+  {
+    "text": "Also Azure OpenAI deployments",
+    "x": 2668,
+    "y": 1326,
+    "width": 365.984375,
+    "height": 32.5
+  },
+  {
+    "text": "Model picker + capability / quota checks",
+    "x": 2668,
+    "y": 1365,
+    "width": 451.0,
+    "height": 32.5
+  },
+  {
+    "text": "ask",
+    "x": 404.5,
+    "y": 1160,
+    "width": 31.0,
+    "height": 26.0
+  },
+  {
+    "text": "view",
+    "x": 400.5,
+    "y": 1293,
+    "width": 39.0,
+    "height": 26.0
+  },
+  {
+    "text": "question",
+    "x": 1002.5,
+    "y": 1158,
+    "width": 75.0,
+    "height": 26.0
+  },
+  {
+    "text": "answer + sources",
+    "x": 961.0,
+    "y": 1378,
+    "width": 158.0,
+    "height": 26.0
+  },
+  {
+    "text": "request",
+    "x": 2531.5,
+    "y": 1158,
+    "width": 67.0,
+    "height": 26.0
+  },
+  {
+    "text": "response",
+    "x": 2524.0,
+    "y": 1385,
+    "width": 82.0,
+    "height": 26.0
+  },
+  {
+    "text": "filtered evidence",
+    "x": 1937.5,
+    "y": 972,
+    "width": 145.0,
+    "height": 26.0
+  },
+  {
+    "text": "03  EVALUATION, HUMAN REVIEW, COSTS & ITERATION",
+    "x": 100,
+    "y": 1682,
+    "width": 626.890625,
+    "height": 29.900000000000002
+  },
+  {
+    "text": "\u25c8",
+    "x": 139.0,
+    "y": 1811,
+    "width": 20.0,
+    "height": 33.800000000000004
+  },
+  {
+    "text": "Ground truth",
+    "x": 198,
+    "y": 1809,
+    "width": 191.0,
+    "height": 40.300000000000004
+  },
+  {
+    "text": "CSV / JSON cases + references",
+    "x": 128,
+    "y": 1875,
+    "width": 362.0,
+    "height": 32.5
+  },
+  {
+    "text": "Pin document + chunk / index IDs",
+    "x": 128,
+    "y": 1914,
+    "width": 379.0,
+    "height": 32.5
+  },
+  {
+    "text": "Verified and unverified labels",
+    "x": 128,
+    "y": 1953,
+    "width": 325.984375,
+    "height": 32.5
+  },
+  {
+    "text": "Include retrieval filters and mode",
+    "x": 128,
+    "y": 1992,
+    "width": 366.0,
+    "height": 32.5
+  },
+  {
+    "text": "\u25c8",
+    "x": 739.0,
+    "y": 1811,
+    "width": 20.0,
+    "height": 33.800000000000004
+  },
+  {
+    "text": "Evaluation lab",
+    "x": 798,
+    "y": 1808,
+    "width": 220.0,
+    "height": 41.6
+  },
+  {
+    "text": "Compare up to four configured models",
+    "x": 728,
+    "y": 1875,
+    "width": 430.0,
+    "height": 32.5
+  },
+  {
+    "text": "Token F1 \u00b7 ROUGE-L \u00b7 precision / recall",
+    "x": 728,
+    "y": 1914,
+    "width": 446.9375,
+    "height": 32.5
+  },
+  {
+    "text": "MRR \u00b7 nDCG \u00b7 optional evidence judge",
+    "x": 728,
+    "y": 1953,
+    "width": 437.0,
+    "height": 32.5
+  },
+  {
+    "text": "Pin prompts, data, schema and application",
+    "x": 728,
+    "y": 1992,
+    "width": 479.0,
+    "height": 32.5
+  },
+  {
+    "text": "\u25c8",
+    "x": 1569.0,
+    "y": 1811,
+    "width": 20.0,
+    "height": 33.800000000000004
+  },
+  {
+    "text": "Human review",
+    "x": 1628,
+    "y": 1808,
+    "width": 218.0,
+    "height": 41.6
+  },
+  {
+    "text": "Inspect actual answers + sources",
+    "x": 1558,
+    "y": 1875,
+    "width": 376.0,
+    "height": 32.5
+  },
+  {
+    "text": "Rate results independently",
+    "x": 1558,
+    "y": 1914,
+    "width": 300.0,
+    "height": 32.5
+  },
+  {
+    "text": "Revise chunking / fields / model",
+    "x": 1558,
+    "y": 1953,
+    "width": 358.0,
+    "height": 32.5
+  },
+  {
+    "text": "Rebuild a new version and retest",
+    "x": 1558,
+    "y": 1992,
+    "width": 368.0,
+    "height": 32.5
+  },
+  {
+    "text": "\u25c8",
+    "x": 2449.0,
+    "y": 1811,
+    "width": 20.0,
+    "height": 33.800000000000004
+  },
+  {
+    "text": "Monitoring & cost ledger",
+    "x": 2508,
+    "y": 1807,
+    "width": 385.0,
+    "height": 42.9
+  },
+  {
+    "text": "SQLite traces \u00b7 indexing \u00b7 retrieval \u00b7 service calls",
+    "x": 2438,
+    "y": 1875,
+    "width": 544.0,
+    "height": 32.5
+  },
+  {
+    "text": "Model usage \u00b7 visual inputs \u00b7 latency \u00b7 failures",
+    "x": 2438,
+    "y": 1914,
+    "width": 515.0,
+    "height": 32.5
+  },
+  {
+    "text": "Context caps + trimming + selected evidence",
+    "x": 2438,
+    "y": 1953,
+    "width": 507.0,
+    "height": 32.5
+  },
+  {
+    "text": "Known estimates + unpriced costs kept distinct",
+    "x": 2438,
+    "y": 1992,
+    "width": 528.0,
+    "height": 32.5
+  },
+  {
+    "text": "pin cases",
+    "x": 583.0,
+    "y": 1868,
+    "width": 84.0,
+    "height": 26.0
+  },
+  {
+    "text": "review",
+    "x": 1411.5,
+    "y": 1868,
+    "width": 57.0,
+    "height": 26.0
+  },
+  {
+    "text": "replay + score",
+    "x": 1066.5,
+    "y": 1555,
+    "width": 127.0,
+    "height": 26.0
+  },
+  {
+    "text": "traces + usage",
+    "x": 2758.5,
+    "y": 1545,
+    "width": 133.0,
+    "height": 26.0
+  },
+  {
+    "text": "REVIEW \u2192 ADJUST \u2192 REBUILD \u2192 EVALUATE AGAIN",
+    "x": 823.046875,
+    "y": 2163,
+    "width": 713.90625,
+    "height": 35.1
+  },
+  {
+    "text": "Data + source evidence",
+    "x": 695,
+    "y": 2316,
+    "width": 229.0,
+    "height": 28.6
+  },
+  {
+    "text": "Agent + model traffic",
+    "x": 1235,
+    "y": 2316,
+    "width": 200.0,
+    "height": 28.6
+  },
+  {
+    "text": "Evaluation + feedback",
+    "x": 1785,
+    "y": 2316,
+    "width": 215.0,
+    "height": 28.6
+  },
+  {
+    "text": "Telemetry + costs",
+    "x": 2345,
+    "y": 2316,
+    "width": 171.96875,
+    "height": 28.6
+  },
+  {
+    "text": "Text-only embeddings never embed pixels. Context caps are text characters; visual token use remains provider-specific.",
+    "x": 100,
+    "y": 2350,
+    "width": 1066.96875,
+    "height": 26.0
+  }
+]

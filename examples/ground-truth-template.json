@@ -1,0 +1,19 @@
+{
+  "cases": [
+    {
+      "question": "Replace with a question about your indexed source.",
+      "reference_answer": "Replace with an independently checked expected answer.",
+      "expected_chunk_ids": [],
+      "reference_status": "unverified",
+      "should_clarify": false,
+      "clarification_answer": "Use the whole document."
+    },
+    {
+      "question": "Explain that chart.",
+      "reference_answer": "",
+      "expected_chunk_ids": [],
+      "reference_status": "behavior",
+      "should_clarify": true
+    }
+  ]
+}

@@ -1,0 +1,506 @@
+[
+  {
+    "text": "Agentic RAG",
+    "x": 185,
+    "y": 75,
+    "width": 370.0,
+    "height": 78.0
+  },
+  {
+    "text": "Document Knowledge Studio \u00b7 Azure workflow",
+    "x": 185,
+    "y": 155,
+    "width": 621.96875,
+    "height": 39.0
+  },
+  {
+    "text": "YOUR EXISTING AZURE RESOURCES",
+    "x": 1917.5078125,
+    "y": 108,
+    "width": 454.984375,
+    "height": 32.5
+  },
+  {
+    "text": "01  CONNECT YOUR SERVICES & EXTRACT THE DOCUMENT",
+    "x": 100,
+    "y": 252,
+    "width": 677.0,
+    "height": 29.900000000000002
+  },
+  {
+    "text": "Knowledge Studio",
+    "x": 198,
+    "y": 360,
+    "width": 259.0,
+    "height": 39.0
+  },
+  {
+    "text": "Import a supported document",
+    "x": 128,
+    "y": 425,
+    "width": 329.0,
+    "height": 32.5
+  },
+  {
+    "text": "Choose your Azure workspace",
+    "x": 128,
+    "y": 464,
+    "width": 343.984375,
+    "height": 32.5
+  },
+  {
+    "text": "Review the cloud operation",
+    "x": 128,
+    "y": 503,
+    "width": 305.0,
+    "height": 32.5
+  },
+  {
+    "text": "Original stays in your library",
+    "x": 128,
+    "y": 542,
+    "width": 313.0,
+    "height": 32.5
+  },
+  {
+    "text": "Azure workspace",
+    "x": 833,
+    "y": 358,
+    "width": 265.0,
+    "height": 41.6
+  },
+  {
+    "text": "Your resource endpoints + deployments",
+    "x": 763,
+    "y": 425,
+    "width": 447.96875,
+    "height": 32.5
+  },
+  {
+    "text": "Service keys / Microsoft sign-in / CLI",
+    "x": 763,
+    "y": 464,
+    "width": 411.0,
+    "height": 32.5
+  },
+  {
+    "text": "Check access from the app",
+    "x": 763,
+    "y": 503,
+    "width": 307.0,
+    "height": 32.5
+  },
+  {
+    "text": "No service or role provisioning",
+    "x": 763,
+    "y": 542,
+    "width": 341.0,
+    "height": 32.5
+  },
+  {
+    "text": "Document Intelligence",
+    "x": 1608,
+    "y": 357,
+    "width": 348.0,
+    "height": 42.9
+  },
+  {
+    "text": "prebuilt-layout parses document content and structure",
+    "x": 1538,
+    "y": 425,
+    "width": 604.0,
+    "height": 32.5
+  },
+  {
+    "text": "PDF / supported Office, HTML or image sources",
+    "x": 1538,
+    "y": 464,
+    "width": 538.984375,
+    "height": 32.5
+  },
+  {
+    "text": "Returned text, tables, figures, sections and source geometry",
+    "x": 1538,
+    "y": 503,
+    "width": 675.0,
+    "height": 32.5
+  },
+  {
+    "text": "Raw Layout JSON and returned coverage remain inspectable",
+    "x": 1538,
+    "y": 542,
+    "width": 687.0,
+    "height": 32.5
+  },
+  {
+    "text": "configure",
+    "x": 616.0,
+    "y": 427,
+    "width": 82.0,
+    "height": 26.0
+  },
+  {
+    "text": "analyze",
+    "x": 1398.0,
+    "y": 427,
+    "width": 68.0,
+    "height": 26.0
+  },
+  {
+    "text": "returned entities + raw Layout JSON",
+    "x": 1037.5,
+    "y": 755,
+    "width": 325.0,
+    "height": 26.0
+  },
+  {
+    "text": "02  INSPECT, CHOOSE CHUNKS & PUBLISH A VERSION",
+    "x": 100,
+    "y": 857,
+    "width": 616.9375,
+    "height": 29.900000000000002
+  },
+  {
+    "text": "Inspect Layout output",
+    "x": 198,
+    "y": 967,
+    "width": 341.0,
+    "height": 42.9
+  },
+  {
+    "text": "Review extracted elements and source regions",
+    "x": 128,
+    "y": 1035,
+    "width": 526.0,
+    "height": 32.5
+  },
+  {
+    "text": "Keep original text, tables and visual references",
+    "x": 128,
+    "y": 1074,
+    "width": 526.0,
+    "height": 32.5
+  },
+  {
+    "text": "Check page coverage before indexing",
+    "x": 128,
+    "y": 1113,
+    "width": 426.0,
+    "height": 32.5
+  },
+  {
+    "text": "Azure owns entity extraction in this workflow",
+    "x": 128,
+    "y": 1152,
+    "width": 496.0,
+    "height": 32.5
+  },
+  {
+    "text": "Preprocess & chunk",
+    "x": 1048,
+    "y": 968,
+    "width": 312.0,
+    "height": 41.6
+  },
+  {
+    "text": "Choose cleanup and a chunking strategy",
+    "x": 978,
+    "y": 1035,
+    "width": 459.0,
+    "height": 32.5
+  },
+  {
+    "text": "Preview boundaries, including agentic groups",
+    "x": 978,
+    "y": 1074,
+    "width": 510.0,
+    "height": 32.5
+  },
+  {
+    "text": "Configure searchable / filterable / sortable fields",
+    "x": 978,
+    "y": 1113,
+    "width": 535.0,
+    "height": 32.5
+  },
+  {
+    "text": "Select text or visual embedding engine",
+    "x": 978,
+    "y": 1152,
+    "width": 436.0,
+    "height": 32.5
+  },
+  {
+    "text": "Azure AI Search",
+    "x": 1888,
+    "y": 967,
+    "width": 251.984375,
+    "height": 42.9
+  },
+  {
+    "text": "Create a new index in your existing service",
+    "x": 1818,
+    "y": 1035,
+    "width": 482.0,
+    "height": 32.5
+  },
+  {
+    "text": "Upload chunks, vectors and source metadata",
+    "x": 1818,
+    "y": 1074,
+    "width": 508.0,
+    "height": 32.5
+  },
+  {
+    "text": "Verify uploads before activating the version",
+    "x": 1818,
+    "y": 1113,
+    "width": 484.984375,
+    "height": 32.5
+  },
+  {
+    "text": "Earlier active index survives a failed build",
+    "x": 1818,
+    "y": 1152,
+    "width": 466.0,
+    "height": 32.5
+  },
+  {
+    "text": "prepare",
+    "x": 840.5,
+    "y": 1034,
+    "width": 69.0,
+    "height": 26.0
+  },
+  {
+    "text": "index",
+    "x": 1686.5,
+    "y": 1034,
+    "width": 47.0,
+    "height": 26.0
+  },
+  {
+    "text": "03  ASK, RETRIEVE & ANSWER",
+    "x": 100,
+    "y": 1395,
+    "width": 344.96875,
+    "height": 29.900000000000002
+  },
+  {
+    "text": "Research Agent",
+    "x": 198,
+    "y": 1507,
+    "width": 248.984375,
+    "height": 42.9
+  },
+  {
+    "text": "Clarify the question and plan the search",
+    "x": 128,
+    "y": 1575,
+    "width": 446.0,
+    "height": 32.5
+  },
+  {
+    "text": "Respect page / section / source filters",
+    "x": 128,
+    "y": 1614,
+    "width": 423.0,
+    "height": 32.5
+  },
+  {
+    "text": "Inspect evidence and assess sufficiency",
+    "x": 128,
+    "y": 1653,
+    "width": 454.0,
+    "height": 32.5
+  },
+  {
+    "text": "Bound effort, context and conversation memory",
+    "x": 128,
+    "y": 1692,
+    "width": 531.0,
+    "height": 32.5
+  },
+  {
+    "text": "Azure OpenAI",
+    "x": 1028,
+    "y": 1507,
+    "width": 218.0,
+    "height": 42.9
+  },
+  {
+    "text": "Your answer deployment + authentication",
+    "x": 958,
+    "y": 1575,
+    "width": 465.96875,
+    "height": 32.5
+  },
+  {
+    "text": "Use retrieved text, rows and descriptions",
+    "x": 958,
+    "y": 1614,
+    "width": 457.0,
+    "height": 32.5
+  },
+  {
+    "text": "Attach visuals for a compatible deployment",
+    "x": 958,
+    "y": 1653,
+    "width": 483.0,
+    "height": 32.5
+  },
+  {
+    "text": "Generate a source-grounded response",
+    "x": 958,
+    "y": 1692,
+    "width": 433.0,
+    "height": 32.5
+  },
+  {
+    "text": "Answer + references",
+    "x": 1858,
+    "y": 1507,
+    "width": 321.0,
+    "height": 42.9
+  },
+  {
+    "text": "Citations point back to source chunks",
+    "x": 1788,
+    "y": 1575,
+    "width": 421.0,
+    "height": 32.5
+  },
+  {
+    "text": "Open original pages, tables and images",
+    "x": 1788,
+    "y": 1614,
+    "width": 446.0,
+    "height": 32.5
+  },
+  {
+    "text": "Ask follow-ups within the selected source",
+    "x": 1788,
+    "y": 1653,
+    "width": 463.0,
+    "height": 32.5
+  },
+  {
+    "text": "Separate observations, inference and gaps",
+    "x": 1788,
+    "y": 1692,
+    "width": 482.0,
+    "height": 32.5
+  },
+  {
+    "text": "agent search tool",
+    "x": 1113.0,
+    "y": 1265,
+    "width": 154.0,
+    "height": 26.0
+  },
+  {
+    "text": "keyword + vector search + metadata filters",
+    "x": 1159.5,
+    "y": 1310,
+    "width": 381.0,
+    "height": 26.0
+  },
+  {
+    "text": "evidence",
+    "x": 800.5,
+    "y": 1558,
+    "width": 79.0,
+    "height": 26.0
+  },
+  {
+    "text": "response",
+    "x": 1629.0,
+    "y": 1558,
+    "width": 82.0,
+    "height": 26.0
+  },
+  {
+    "text": "OPTIONAL SERVICES & THE SHARED REVIEW LOOP",
+    "x": 100,
+    "y": 1880,
+    "width": 586.0,
+    "height": 29.900000000000002
+  },
+  {
+    "text": "Azure Vision \u00b7 optional",
+    "x": 198,
+    "y": 1984,
+    "width": 337.984375,
+    "height": 40.300000000000004
+  },
+  {
+    "text": "Text + image vectors for visual retrieval",
+    "x": 128,
+    "y": 2050,
+    "width": 441.953125,
+    "height": 32.5
+  },
+  {
+    "text": "Pixel embeddings are separate from chat vision",
+    "x": 128,
+    "y": 2089,
+    "width": 534.0,
+    "height": 32.5
+  },
+  {
+    "text": "Private Blob \u00b7 optional",
+    "x": 1048,
+    "y": 1984,
+    "width": 330.0,
+    "height": 40.300000000000004
+  },
+  {
+    "text": "Originals, Layout JSON and visual assets",
+    "x": 978,
+    "y": 2050,
+    "width": 467.0,
+    "height": 32.5
+  },
+  {
+    "text": "Source references through your private container",
+    "x": 978,
+    "y": 2089,
+    "width": 548.0,
+    "height": 32.5
+  },
+  {
+    "text": "Monitoring + evaluation",
+    "x": 1888,
+    "y": 1984,
+    "width": 350.0,
+    "height": 40.300000000000004
+  },
+  {
+    "text": "Index / retrieval / model traces and known costs",
+    "x": 1818,
+    "y": 2050,
+    "width": 535.0,
+    "height": 32.5
+  },
+  {
+    "text": "Ground truth, model comparison and human review",
+    "x": 1818,
+    "y": 2089,
+    "width": 574.0,
+    "height": 32.5
+  },
+  {
+    "text": "Review \u2192 adjust preprocessing, chunks, fields or model \u2192 build a new version \u2192 evaluate again",
+    "x": 100,
+    "y": 2239,
+    "width": 1183.0,
+    "height": 33.800000000000004
+  },
+  {
+    "text": "Connected resources, personal desktop workspace. Your Azure permissions, model capabilities and quotas apply.",
+    "x": 100,
+    "y": 2292,
+    "width": 1175.921875,
+    "height": 29.900000000000002
+  }
+]

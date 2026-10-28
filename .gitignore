@@ -1,0 +1,22 @@
+.venv/
+data/
+work/
+.env
+.env.*
+!.env.example
+__pycache__/
+.pytest_cache/
+*.pyc
+.DS_Store
+*.log
+
+# Private workspace artifacts and exports
+outputs/
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.db
+*.pem
+*.key
+credentials.json
+service-account*.json
