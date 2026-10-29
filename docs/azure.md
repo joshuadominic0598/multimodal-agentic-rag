@@ -1,8 +1,8 @@
 # Azure workspace
 
-![Azure document workflow](../resources/images/azure-workflow.png)
+![Azure document workflow](assets/azure-workflow.png)
 
-[Scalable diagram](../resources/images/azure-workflow.svg) · [Editable draw.io](diagrams/azure-workflow.drawio)
+[Scalable diagram](assets/azure-workflow.svg) · [Editable draw.io](diagrams/azure-workflow.drawio)
 
 
 Agentic RAG can orchestrate an Azure document pipeline while the app runs on your desktop:

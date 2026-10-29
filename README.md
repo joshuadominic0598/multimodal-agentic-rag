@@ -1,4 +1,4 @@
-<p align="center"><img src="static/icon.svg" width="76" alt="Agentic RAG icon"></p>
+<p align="center"><img src="frontend/icon.svg" width="76" alt="Agentic RAG icon"></p>
 
 <h1 align="center">Agentic RAG</h1>
 <p align="center"><strong>Document Knowledge Studio</strong><br>Bring your documents. Explore what is inside. Ask better questions.</p>
@@ -7,7 +7,7 @@
 
 Your notes, reports, spreadsheets and recordings hold more than paragraphs. They hold diagrams, numbers, screenshots, source code and the context around them. Agentic RAG turns a working document into a knowledge workspace you can inspect, search and have a conversation with—with links back to the original evidence.
 
-![Document Knowledge Studio](resources/images/studio-preview.png)
+![Document Knowledge Studio](docs/assets/studio-preview.png)
 
 ## From “where did I put that?” to “show me the evidence”
 
@@ -41,7 +41,7 @@ You choose the embedding engine and answer model separately. Text-only models ca
 
 **Azure workflow:** connect your existing services from the app, then let **Azure Document Intelligence `prebuilt-layout`** extract the document. Inspect the returned elements and raw JSON, choose preprocessing and chunking, and publish a new index inside **your Azure AI Search service**. Connect your **Azure OpenAI deployment** for the conversation.
 
-![Azure document knowledge workflow](resources/images/azure-workflow.png)
+![Azure document knowledge workflow](docs/assets/azure-workflow.png)
 
 The agent uses the Azure index as a tool: **keyword + vector search**, narrowed by metadata such as page, section or source. Retrieved text, table data and supported original visuals ground the answer. Optional Azure Vision provides pixel embeddings; optional private Blob Storage keeps cloud source references. Monitoring and evaluation work with Azure indexes too.
 
@@ -57,7 +57,7 @@ The app connects resources you already own. You review cloud operations before f
 
 ## Try your first conversation
 
-1. Run **`setup.command`** once for a fresh installation, then **`start.command`**. Open [Document Knowledge Studio](http://127.0.0.1:8020).
+1. Run **`scripts/setup.command`** once for a fresh installation, then **`scripts/start.command`**. Open [Document Knowledge Studio](http://127.0.0.1:8020).
 2. Add a model in **Connections & settings**, or test the default local Ollama profile. For Azure, also connect your services in **Azure workspace**.
 3. Import a source in **Source library**. In **Processing studio**, choose your workflow and retrieval mode, inspect extraction, preview chunks and build the index.
 4. Open **Research agent**, ask a question, clarify the scope and explore the answer's source references.
@@ -66,8 +66,18 @@ Your library, conversations and traces are stored on your computer. Selected fil
 
 ## A look inside
 
-![Agentic RAG architecture](resources/images/agentic-rag_architecture.png)
+![Agentic RAG architecture](docs/assets/agentic-rag_architecture.png)
 
-[Zoom into the architecture](resources/images/agentic-rag_architecture.svg) · [Editable architecture](docs/diagrams/agentic-rag_architecture.drawio) · [Editable Azure flow](docs/diagrams/azure-workflow.drawio)
+[Zoom into the architecture](docs/assets/agentic-rag_architecture.svg) · [Editable architecture](docs/diagrams/agentic-rag_architecture.drawio) · [Editable Azure flow](docs/diagrams/azure-workflow.drawio)
 
-For setup, implementation details, supported-format limits and test evidence, head to the [backend README](app/README.md), [frontend README](static/README.md), [model guide](docs/providers.md) or [verification notes](docs/verification.md).
+For setup, implementation details, supported-format limits and test evidence, head to the [backend README](backend/README.md), [frontend README](frontend/README.md), [model guide](docs/providers.md) or [verification notes](docs/verification.md).
+
+## Repository map
+
+```text
+backend/       Python package, API, services and tests
+frontend/      Browser interface and original icon
+docs/          Guides, diagrams, screenshots and examples
+scripts/       Desktop launchers and formatting tool
+pyproject.toml Dependencies, packaging and development settings
+```

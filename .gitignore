@@ -20,3 +20,10 @@ outputs/
 *.key
 credentials.json
 service-account*.json
+
+# Build and development tools
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+node_modules/

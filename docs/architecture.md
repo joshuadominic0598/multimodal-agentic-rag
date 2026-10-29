@@ -25,14 +25,16 @@ flowchart LR
 
 | Component | Responsibility |
 |---|---|
-| `app/store.py` | Local JSON records, version IDs, assets, SQLite vectors/FTS and event storage |
-| `app/extraction.py` | Native and optional vision extraction; media transcription; table/chart previews; original locations |
-| `app/indexing.py` | Preprocessing, five chunking strategies, validated agent plans, local/cloud embeddings, atomic activation and hybrid retrieval |
-| `app/providers.py` | Native Gemini/Responses adapters, encrypted credentials, call budgets and usage/cost ledger |
-| `app/agent.py` | Clarification, scoped memory, search planning, bounded evidence passes, citations and optional illustration generation |
-| `app/evaluation.py` | Dataset validation, immutable benchmarks, pinned comparison snapshots, metrics and optional judge |
-| `app/main.py` | Loopback API, guarded imports, file serving, background jobs, monitoring and review endpoints |
-| `static/` | Responsive library, processing inspector, research chat, monitoring, evaluation and connection UI |
+| `backend/src/app/core/store.py` | Local JSON records, version IDs, assets, SQLite vectors/FTS and event storage |
+| `backend/src/app/ingestion/extraction.py` | Native and optional vision extraction; media transcription; table/chart previews; original locations |
+| `backend/src/app/ingestion/indexing.py` | Preprocessing, five chunking strategies, validated agent plans, local/cloud embeddings, atomic activation and hybrid retrieval |
+| `backend/src/app/integrations/providers.py` | Native Gemini/Responses adapters, encrypted credentials, call budgets and usage/cost ledger |
+| `backend/src/app/agents/research.py` | Clarification, scoped memory, search planning, bounded evidence passes, citations and optional illustration generation |
+| `backend/src/app/agents/evaluation.py` | Dataset validation, immutable benchmarks, pinned comparison snapshots, metrics and optional judge |
+| `backend/src/app/main.py` | ASGI application composition and route registration |
+| `backend/src/app/api/` | Thin HTTP routes, response shaping and loopback policy |
+| `backend/src/app/services/` | Source imports, connection tests, jobs and monitoring workflows |
+| `frontend/` | Responsive library, processing inspector, research chat, monitoring, evaluation and connection UI |
 
 Index builds write to a new index ID and activate only after completion. Extraction revisions retain their own assets, so later processing cannot replace a historical index's evidence. Every visual gets a dedicated vector. Dimensions and embedding configuration are pinned; a query cannot silently use a different embedding space. Local CLIP maps image/text inputs to one space; local BGE is a text-only alternative. Cloud query embeddings use the saved embedding configuration with the current credential for the same connection.
 
