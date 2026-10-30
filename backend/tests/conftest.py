@@ -7,6 +7,17 @@ import pytest
 from app.core import store as s
 from app.core.schemas import Pipeline
 
+@pytest.fixture(autouse=True)
+def provider_pacing_clock(monkeypatch):
+    from app.integrations import rate_limits
+
+    clock = [s.now()]
+    monkeypatch.setattr(rate_limits, "now", lambda: clock[0])
+    monkeypatch.setattr(
+        rate_limits, "sleep", lambda seconds: clock.__setitem__(0, clock[0] + seconds)
+    )
+    return clock
+
 @pytest.fixture
 def doc():
     from app.main import register

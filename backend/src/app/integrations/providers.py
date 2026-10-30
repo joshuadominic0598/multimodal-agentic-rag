@@ -16,6 +16,7 @@ import httpx
 from cryptography.fernet import Fernet
 
 from app.core import store as s
+from app.integrations import rate_limits
 from app.integrations.model_catalog import CATALOG as CATALOG
 from app.integrations.model_catalog import defaults
 
@@ -170,6 +171,7 @@ def safe_error(exc):
             401: "Provider rejected the API key.",
             403: "Provider denied access. Check key permissions, model access and project restrictions.",
             404: "Model/deployment not available for this connection.",
+            503: "Provider is temporarily unavailable or overloaded (HTTP 503). No automatic retry was made; this is not a confirmed rate-limit error.",
         }.get(code, f"Provider returned HTTP {code}. Check model, quota and supported features.")
     if isinstance(exc, httpx.TimeoutException):
         return "Provider timed out. No automatic retry was made."
@@ -281,9 +283,18 @@ def request(
     s.put("calls", id, rec)
     s.event(budget.run, op, f"{c['provider']} / {model}", call_id=id)
     try:
+        tokens = max(1, len(preview.encode("utf-8")) // 3) + visual_count * 2048
+        if op != "embedding":
+            tokens += max_output
+        rate_limits.reserve(c, budget.run, tokens, id)
+        job = s.get("jobs", budget.run)
+        if job and job.get("cancel"):
+            raise ProviderError("Cancelled by user before sending the model request.")
+        s.patch("calls", id, status="running", sent_at=time.time())
         headers = auth_headers(c)
         with httpx.Client(timeout=httpx.Timeout(180, connect=20), trust_env=False) as client:
             r = client.post(url, headers=headers, json=body, files=files, data=data)
+            rate_limits.observe(c, r)
             r.raise_for_status()
             obj = r.json()
         usage = obj.get("usage", obj.get("usageMetadata", {})) or {}
@@ -329,7 +340,7 @@ def request(
             ) / 1e6
         if c["provider"] == "ollama":
             cost = 0
-        rate_limits = {
+        response_limits = {
             k: r.headers[k]
             for k in [
                 "retry-after",
@@ -357,13 +368,13 @@ def request(
             if cost is not None
             else "unpriced",
             usage=usage,
-            rate_limits=rate_limits,
+            rate_limits=response_limits,
             api_fees_only=c["provider"] == "ollama",
         )
         return obj, id
     except Exception as exc:
         message = safe_error(exc)
-        rate_limits = (
+        response_limits = (
             {
                 k: exc.response.headers[k]
                 for k in [
@@ -384,7 +395,7 @@ def request(
             status="failed",
             duration=time.time() - start,
             error=message,
-            rate_limits=rate_limits,
+            rate_limits=response_limits,
         )
         raise ProviderError(message) from None
 

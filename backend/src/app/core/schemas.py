@@ -50,6 +50,10 @@ class Connection(Strict):
     vision: bool = False
     free_tier: bool = False
     account_tier: Literal["unknown", "free", "paid", "local"] = "unknown"
+    requests_per_minute: int | None = Field(default=None, ge=1, le=10000)
+    tokens_per_minute: int | None = Field(default=None, ge=128, le=100000000)
+    requests_per_day: int | None = Field(default=None, ge=1, le=1000000)
+    quota_group: str = Field(default="", max_length=100, pattern=r"^[A-Za-z0-9 ._-]*$")
     ollama_context_tokens: int = Field(default=16384, ge=2048, le=131072)
     input_price: float | None = Field(default=None, ge=0)
     output_price: float | None = Field(default=None, ge=0)
