@@ -141,6 +141,32 @@ def searchable_fields(options=None):
 def retrievable_fields(options=None):
     return [k for k, v in configure(options).items() if v["retrievable"]]
 
+def inspection(snapshot, extraction):
+    options = snapshot["config"].get("index_fields", {})
+    attributes = configure(options)
+    elements = {element["id"]: element for element in extraction["elements"]}
+    chunks = []
+    for chunk in snapshot["chunks"]:
+        stored = values(chunk)
+        chunks.append(
+            {
+                **chunk,
+                "searchable_values": {
+                    name: stored.get(name, "")
+                    for name, flags in attributes.items()
+                    if flags["searchable"]
+                },
+                "keyword_text": keyword_text(chunk, options),
+                "elements": [elements[id] for id in chunk["element_ids"] if id in elements],
+            }
+        )
+    return {
+        "id": snapshot["id"],
+        "extraction_id": extraction["id"],
+        "fields": [{**field, **attributes[field["name"]]} for field in SPECS],
+        "chunks": chunks,
+    }
+
 def info(options=None):
     return {
         "fields": SPECS,

@@ -32,6 +32,16 @@ def index(id: str, body: Pipeline):
 def get_index(id: str):
     return s.get("indexes", id, True)
 
+@router.get("/api/indexes/{id}/inspection")
+def inspect_index(id: str):
+    snapshot = s.get("indexes", id, True)
+    return index_schema.inspection(snapshot, s.get("extractions", snapshot["extraction_id"], True))
+
+@router.get("/api/chunk-previews/{id}/inspection")
+def inspect_preview(id: str):
+    snapshot = s.get("chunk_previews", id, True)
+    return index_schema.inspection(snapshot, s.get("extractions", snapshot["extraction_id"], True))
+
 @router.get("/api/indexes/{id}/filters")
 def index_filters(id: str):
     return retrieval.catalog(s.get("indexes", id, True))

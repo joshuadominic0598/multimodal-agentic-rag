@@ -344,3 +344,66 @@ def test_exact_ordinal_filter_matches_uploaded_position(indexed):
     rt.validate_fields(index, {"equals": {"ordinal": 0}})
     assert rt.matches(index["chunks"][0], {"equals": {"ordinal": 0}})
     assert not rt.matches(index["chunks"][0], {"equals": {"ordinal": 1}})
+
+def test_inspection_uses_pinned_fields_and_original_extraction(indexed, client):
+    from app.core import store as store
+    from app.search import index_schema
+
+    document, index = indexed
+    attributes = {"content": {"searchable": False}, "source_names": {"searchable": True}}
+    index["config"]["index_fields"] = attributes
+    store.put("indexes", index["id"], index)
+    response = client.get(f"/api/indexes/{index['id']}/inspection")
+    assert response.status_code == 200
+    inspection = response.json()
+    assert inspection["extraction_id"] == index["extraction_id"]
+    assert not next(field for field in inspection["fields"] if field["name"] == "content")[
+        "searchable"
+    ]
+    for chunk in inspection["chunks"]:
+        assert "source_names" in chunk["searchable_values"]
+        assert "content" not in chunk["searchable_values"]
+        assert chunk["keyword_text"] == index_schema.keyword_text(chunk, attributes)
+        assert chunk["text"]
+        assert chunk["elements"]
+    store.patch("documents", document["id"], extraction_id="different-revision")
+    assert (
+        client.get(f"/api/indexes/{index['id']}/inspection").json()["extraction_id"]
+        == index["extraction_id"]
+    )
+
+def test_chunk_inspection_links_visual_descriptions_and_table_rows(cfg):
+    from app.search.index_schema import inspection
+
+    elements = [
+        {
+            "id": "image",
+            "kind": "image",
+            "asset": "assets/image.png",
+            "text": "OCR words",
+            "description": "A chart with rising revenue",
+        },
+        {
+            "id": "table",
+            "kind": "table",
+            "asset": "assets/table.png",
+            "text": "Sales | 42",
+            "rows": [["Sales", 42]],
+        },
+    ]
+    chunks = [
+        {
+            "id": "c00001",
+            "title": "Sales",
+            "text": "OCR words\nVisual description (model generated): A chart with rising revenue\nSales | 42",
+            "element_ids": ["image", "table"],
+        }
+    ]
+    result = inspection(
+        {"id": "snapshot", "config": cfg.model_dump(), "chunks": chunks},
+        {"id": "revision", "elements": elements},
+    )
+    chunk = result["chunks"][0]
+    assert chunk["searchable_values"]["content"] == chunks[0]["text"]
+    assert chunk["elements"][0]["description"] == elements[0]["description"]
+    assert chunk["elements"][1]["rows"] == [["Sales", 42]]
