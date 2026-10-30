@@ -88,6 +88,9 @@ let config = {
   ...JSON.parse(localStorage.getItem("agentic-rag-pipeline") || "{}"),
 };
 let jobs = new Map(),
+  pipelineRuns = new Map(),
+  pipelineSyncing = false,
+  jobListAvailable = true,
   monitor = null,
   traceRun = "",
   evalId = "",
@@ -95,7 +98,13 @@ let jobs = new Map(),
   editConnection = "",
   elementKind = "",
   elementSearch = "",
-  inspectTab = "elements",
+  inspectTab = "chunks",
+  inspectSnapshotId = "",
+  chunkInspection = null,
+  chunkInspectionError = "",
+  chunkSearch = "",
+  chunkKind = "",
+  chunkPage = 0,
   messages = [],
   chatResult = null,
   sessionId = "",
@@ -181,12 +190,15 @@ async function api(url, opts = {}) {
   } catch {
     throw Error("The local app returned an unreadable response.");
   }
-  if (!r.ok)
-    throw Error(
+  if (!r.ok) {
+    const error = Error(
       typeof data.detail === "string"
         ? data.detail
         : JSON.stringify(data.detail),
     );
+    error.status = r.status;
+    throw error;
+  }
   return data;
 }
 const post = (url, data = {}) =>
@@ -195,16 +207,72 @@ async function refresh() {
   state = await api("/api/state");
   if (!config.connection_id)
     config.connection_id = state.settings.active_connection;
-  if (!docId && state.documents.length) docId = state.documents[0].id;
+  if (!state.documents.some((document) => document.id === docId)) {
+    docId = state.documents[0]?.id || "";
+    inspectSnapshotId = "";
+    chunkInspection = null;
+  }
   if (docId) await loadDetail();
 }
 async function loadDetail() {
-  detail = await api("/api/documents/" + docId);
+  const scope = docId;
+  const result = await api("/api/documents/" + scope);
+  if (scope !== docId) return;
+  detail = result;
   if (detail.active_index)
     detail.filter_catalog = await api(
       "/api/indexes/" + detail.active_index + "/filters",
     );
+  await loadChunkInspection();
   localStorage.setItem("agentic-rag-document", docId);
+}
+function inspectionTargets() {
+  return [
+    ...(detail?.indexes || []).map((index) => ({
+      id: "index:" + index.id,
+      label: `${index.id === detail.active_index ? "Active index" : "Index version"} · ${short(index.id)} · ${index.chunks.length} chunks`,
+    })),
+    ...(detail?.chunk_preview
+      ? [
+          {
+            id: "preview:" + detail.chunk_preview.id,
+            label: `Chunk preview · ${short(detail.chunk_preview.id)} · not indexed`,
+          },
+        ]
+      : []),
+  ];
+}
+function selectedInspectionTarget() {
+  const targets = inspectionTargets();
+  return (
+    targets.find((target) => target.id === inspectSnapshotId) ||
+    targets.find((target) => target.id === "index:" + detail?.active_index) ||
+    targets[0]
+  );
+}
+async function loadChunkInspection() {
+  const target = selectedInspectionTarget();
+  if (!target) {
+    chunkInspection = null;
+    chunkInspectionError = "";
+    return;
+  }
+  if (chunkInspection?.target === target.id) return;
+  const scope = docId,
+    [kind, id] = target.id.split(":");
+  try {
+    const result = await api(
+      `/api/${kind === "index" ? "indexes" : "chunk-previews"}/${id}/inspection`,
+    );
+    if (scope !== docId || target.id !== selectedInspectionTarget()?.id) return;
+    chunkInspection = { ...result, target: target.id };
+    chunkInspectionError = "";
+    chunkPage = 0;
+  } catch (error) {
+    if (scope !== docId || target.id !== selectedInspectionTarget()?.id) return;
+    chunkInspection = null;
+    chunkInspectionError = error.message;
+  }
 }
 function header(title, desc, actions = "") {
   return `<div class="page-head"><div><div class="eyebrow">${page === "library" ? "YOUR KNOWLEDGE, IN FOCUS" : "DOCUMENT KNOWLEDGE STUDIO"}</div><h1>${title}</h1><p>${desc}</p></div><div class="actions">${actions}</div></div>`;
@@ -216,6 +284,10 @@ function banners() {
   return (
     '<div id="job-banners">' +
     [...jobs.values()]
+      .filter(
+        (j) =>
+          !Object.values(pipelineStages).some((stage) => stage.kind === j.kind),
+      )
       .map(
         (j) =>
           `<div class="run-banner"><div><span class="spinner"></span><b>${esc(j.kind)}</b> <span data-job-message="${j.id}">Queued…</span></div><button class="btn small" data-action="cancel" data-id="${j.id}">Cancel</button></div>`,
@@ -223,6 +295,162 @@ function banners() {
       .join("") +
     "</div>"
   );
+}
+const pipelineStages = {
+  extract: {
+    kind: "extraction",
+    action: "Extract elements →",
+    running: "Extracting elements…",
+    complete: "Extraction completed",
+  },
+  chunks: {
+    kind: "chunking",
+    action: "Preview chunks",
+    running: "Creating chunks…",
+    complete: "Chunk preview ready",
+  },
+  index: {
+    kind: "indexing",
+    action: "Build vector index →",
+    running: "Building vector index…",
+    complete: "Index ready for questions",
+  },
+};
+function pipelineJob(stage) {
+  const kind = pipelineStages[stage].kind;
+  const unique = new Map();
+  for (const job of [
+    ...pipelineRuns.values(),
+    ...jobs.values(),
+    ...(state.jobs || []),
+  ]) {
+    if (!unique.has(job.id)) unique.set(job.id, job);
+  }
+  const busy = (job) =>
+    ["submitting", "queued", "running"].includes(job.status);
+  return [...unique.values()]
+    .filter((j) => j.scope === docId && j.kind === kind)
+    .sort(
+      (a, b) => Number(busy(b)) - Number(busy(a)) || b.created - a.created,
+    )[0];
+}
+function processingProgress(job) {
+  if (!job) return null;
+  if (job.status === "completed") return { percent: 100 };
+  if (job.progress) return job.progress;
+  const events = job.events || [];
+  for (const event of [...events].reverse()) {
+    if (event.details?.progress) return event.details.progress;
+    const page = event.message.match(/^Extracting page (\d+)\/(\d+)/);
+    const embedding = event.message.match(
+      /^Embedding chunks (\d+)[–-]\d+ of (\d+)/,
+    );
+    const audio = event.message.match(/^Transcribing segment (\d+)\/(\d+)/);
+    const match = page || embedding || audio;
+    if (match) {
+      const completed = Number(match[1]) - 1,
+        total = Number(match[2]);
+      return {
+        percent:
+          (page ? 0 : embedding ? 30 : 10) +
+          ((page ? 65 : 55) * completed) / total,
+        completed,
+        total,
+        unit: page ? "pages" : embedding ? "chunks" : "audio segments",
+        message: event.message,
+      };
+    }
+  }
+  return { percent: 0, message: "Waiting for the next processing checkpoint" };
+}
+function progressBar(job, status) {
+  if (!job && status !== "completed") return "";
+  const progress = processingProgress(job) || { percent: 100 };
+  const percent = Math.max(
+    0,
+    Math.min(
+      status === "completed" ? 100 : 99,
+      Math.floor(Number(progress.percent) || 0),
+    ),
+  );
+  return `<div class="pipeline-progress-label"><span>Workflow progress</span><b>${percent}%</b></div><progress class="pipeline-progress" max="100" value="${percent}" aria-label="Workflow progress">${percent}%</progress>${progress.total != null ? `<div class="small muted section-space">${fmt(progress.completed)} / ${fmt(progress.total)} ${esc(progress.unit)} completed</div>` : ""}${status === "running" || status === "queued" ? '<div class="small muted section-space">Please wait. Progress follows completed steps; model and service calls can take time.</div>' : ""}`;
+}
+function pipelineBusy() {
+  return Object.keys(pipelineStages).some((stage) =>
+    ["submitting", "queued", "running"].includes(pipelineJob(stage)?.status),
+  );
+}
+function pipelineStatus(stage) {
+  const info = pipelineStages[stage],
+    j = pipelineJob(stage);
+  const existing =
+    stage === "extract"
+      ? detail?.extraction
+      : stage === "chunks"
+        ? detail?.chunk_preview
+        : detail?.indexes?.find((i) => i.id === detail.active_index);
+  const status = j?.status || (existing ? "completed" : "idle");
+  const busy = ["submitting", "queued", "running"].includes(status);
+  let title = "Not started",
+    message =
+      stage === "extract"
+        ? "Extract the source to inspect its elements."
+        : stage === "chunks"
+          ? "Preview boundaries before building your index."
+          : "Review the index fields above, then build your index.";
+  if (busy) {
+    title =
+      status === "submitting"
+        ? "Starting…"
+        : status === "queued"
+          ? "Queued"
+          : info.running;
+    message =
+      j.poll_error ||
+      (j.rate_wait?.until > Date.now() / 1000
+        ? `Waiting ${Math.max(1, Math.ceil(j.rate_wait.until - Date.now() / 1000))}s before the next ${j.rate_wait.provider} request. Your work is still running.`
+        : "") ||
+      j.progress?.message ||
+      j.events?.at(-1)?.message ||
+      "Working in the background. Please wait; you can visit other screens.";
+  } else if (status === "completed") {
+    title = info.complete;
+    const count =
+      stage === "extract"
+        ? (j?.result?.count ?? existing?.elements?.length)
+        : stage === "chunks"
+          ? (j?.result?.count ?? existing?.chunks?.length)
+          : (j?.result?.chunks ?? existing?.chunks?.length);
+    message =
+      stage === "extract"
+        ? `${fmt(count)} elements extracted. Review them in “Inspect your knowledge”.`
+        : stage === "chunks"
+          ? `${fmt(count)} chunks available to review.`
+          : `${fmt(count)} chunks indexed. Your index is ready to use in Research agent.`;
+  } else if (status === "failed" || status === "cancelled") {
+    title = status === "failed" ? "Processing failed" : "Processing cancelled";
+    message =
+      j.error || "The operation stopped. Review your settings and try again.";
+  }
+  const elapsed = j?.started
+    ? Math.max(0, (j.finished || Date.now() / 1000) - j.started)
+    : null;
+  return `<div class="pipeline-status ${busy ? "busy" : status}" aria-busy="${busy}"><div class="pipeline-status-heading">${busy ? '<span class="spinner" aria-hidden="true"></span>' : status === "completed" ? '<span class="pipeline-check" aria-hidden="true">✓</span>' : ""}<b>${esc(title)}</b></div><p>${esc(message)}</p>${progressBar(j, status)}<div class="actions section-space">${elapsed != null ? `<span class="small muted">${Math.floor(elapsed)}s ${j.finished ? "total" : "elapsed"}</span>` : ""}${j?.id && !j.id.startsWith("pending-") ? `<button type="button" class="btn small" data-action="trace" data-id="${esc(j.id)}">View run details</button>${busy ? `<button type="button" class="btn small" data-action="cancel" data-id="${esc(j.id)}" ${j.cancel ? "disabled" : ""}>${j.cancel ? "Stopping…" : "Cancel"}</button>` : ""}` : ""}${stage === "index" && status === "completed" && detail?.active_index ? '<button type="button" class="btn small" data-action="nav" data-page="research">Ask your document →</button>' : ""}</div></div>`;
+}
+function pipelineButton(stage) {
+  const busy = ["submitting", "queued", "running"].includes(
+    pipelineJob(stage)?.status,
+  );
+  return `<button class="btn ${stage === "chunks" ? "" : "primary"}" type="button" data-action="pipeline" data-stage="${stage}" ${pipelineBusy() || (stage !== "extract" && !detail?.extraction) ? "disabled" : ""}>${busy ? '<span class="spinner" aria-hidden="true"></span>' + pipelineStages[stage].running : pipelineStages[stage].action}</button>`;
+}
+function updatePipelineStatus() {
+  if (page !== "processing") return;
+  for (const stage of Object.keys(pipelineStages)) {
+    for (const node of $$(`[data-pipeline-status="${stage}"]`))
+      node.innerHTML = pipelineStatus(stage);
+    const button = $(`[data-action="pipeline"][data-stage="${stage}"]`);
+    if (button) button.outerHTML = pipelineButton(stage);
+  }
 }
 function render() {
   if (!state.documents) return;
@@ -320,8 +548,8 @@ function processing() {
          ],
          config.whisper_model,
        )
- }</div><button class="btn primary" type="button" data-action="pipeline" data-stage="extract">Extract elements →</button></div>
- <div class="card"><div class="card-header"><div><h3>Chunking & vector index</h3><p>Preview chunk boundaries before embedding.</p></div>${badge("03–04 / INDEX")}</div>${selectField(
+ }</div>${pipelineButton("extract")}<div class="section-space" data-pipeline-status="extract" role="status" aria-live="polite">${pipelineStatus("extract")}</div></div>
+ <div class="card"><div class="card-header"><div><h3>Chunking & embedding settings</h3><p>Choose your strategy, then review the index fields below.</p></div>${badge("03–04 / INDEX")}</div>${selectField(
    "Chunking strategy",
    "strategy",
    [
@@ -338,8 +566,8 @@ function processing() {
    ),
    config.embedding_connection_id,
    "Use supported processing connection",
- )}</select><small>Cloud embeddings send content to this connection. Local models download once and then run locally.</small></div><details><summary>Run limits & estimated cost cap</summary><div class="grid two section-space">${inputField("Maximum provider calls", "max_calls", config.max_calls, "number", "", 'min="1" max="2000"')}${inputField("Estimated dollar cap (optional)", "budget_usd", config.budget_usd ?? "", "number", "Requires pricing; visual calls need the call limit.", 'min="0" step="0.01"')}</div></details><div class="actions section-space"><button class="btn" type="button" data-action="pipeline" data-stage="chunks" ${!ex ? "disabled" : ""}>Preview chunks</button><button class="btn primary" type="button" data-action="pipeline" data-stage="index" ${!ex ? "disabled" : ""}>Build vector index →</button></div><p class="footer-note">A new index version is activated only after every vector is saved. Earlier versions remain available for reproducible tests.</p></div></div>${indexFieldControls()}</form>` +
-    `<div class="card"><div class="card-header"><div><h3>Inspect your knowledge</h3><p>${ex ? fmt(ex.elements.length) + " extracted elements · " + (idx ? fmt(idx.chunks.length) + " indexed chunks" : "index not built yet") : "Run extraction to see titles, text, tables, images and media references."}</p></div>${idx ? badge("Index " + short(idx.id), "green") : ""}</div>${ex ? `${ex.backend === "azure-document-intelligence" ? `<div class="note mb">${badge("AZURE LAYOUT", "green")} Returned pages: ${esc(ex.coverage.returned_pages.join(", "))} · ${ex.coverage.complete ? "Requested coverage verified" : "Partial or unverified coverage"}<div class="actions section-space"><button class="btn small" data-action="azure-json">Inspect raw Azure JSON</button><a class="btn small" href="${fileURL(ex.raw_json_asset)}">Download full JSON ↓</a></div></div>` : ""}<details class="mb"><summary>Extraction coverage & notices (${ex.warnings.length})</summary><div>${ex.warnings.map((w) => `<div class="note warn mb">${esc(w)}</div>`).join("")}</div></details><div class="tabs"><button data-action="inspect-tab" data-tab="elements" class="${inspectTab === "elements" ? "active" : ""}">Elements</button><button data-action="inspect-tab" data-tab="chunks" class="${inspectTab === "chunks" ? "active" : ""}">Chunks</button><button data-action="inspect-tab" data-tab="versions" class="${inspectTab === "versions" ? "active" : ""}">Index versions</button></div>${inspectTab === "elements" ? elementsView(ex.elements) : inspectTab === "chunks" ? chunksView(cp?.chunks || idx?.chunks || []) : versionsView(detail.indexes)}` : empty("Nothing extracted yet.", "Choose a retrieval mode and run extraction above.")}</div>`
+ )}</select><small>Cloud embeddings send content to this connection. Local models download once and then run locally.</small></div><details><summary>Run limits & estimated cost cap</summary><div class="grid two section-space">${inputField("Maximum provider calls", "max_calls", config.max_calls, "number", "", 'min="1" max="2000"')}${inputField("Estimated dollar cap (optional)", "budget_usd", config.budget_usd ?? "", "number", "Requires pricing; visual calls need the call limit.", 'min="0" step="0.01"')}</div></details><div class="actions section-space">${pipelineButton("chunks")}</div><div class="section-space" data-pipeline-status="chunks" role="status" aria-live="polite">${pipelineStatus("chunks")}</div></div></div>${indexFieldControls()}<div class="card mb"><div class="card-header"><div><h3>Build your vector index</h3><p>Ready after extraction, chunking settings and index-field configuration.</p></div>${badge("04 / BUILD")}</div>${pipelineButton("index")}<div class="section-space" data-pipeline-status="index" role="status" aria-live="polite">${pipelineStatus("index")}</div><p class="footer-note">A new index version is activated only after every vector is saved. Earlier versions remain available for reproducible tests.</p></div></form>` +
+    `<div class="card"><div class="card-header"><div><h3>Inspect your knowledge</h3><p>${ex ? fmt(ex.elements.length) + " extracted elements · " + (idx ? fmt(idx.chunks.length) + " indexed chunks" : "index not built yet") : "Run extraction to see titles, text, tables, images and media references."}</p></div>${idx ? badge("Index " + short(idx.id), "green") : ""}</div>${ex ? `${ex.backend === "azure-document-intelligence" ? `<div class="note mb">${badge("AZURE LAYOUT", "green")} Returned pages: ${esc(ex.coverage.returned_pages.join(", "))} · ${ex.coverage.complete ? "Requested coverage verified" : "Partial or unverified coverage"}<div class="actions section-space"><button class="btn small" data-action="azure-json">Inspect raw Azure JSON</button><a class="btn small" href="${fileURL(ex.raw_json_asset)}">Download full JSON ↓</a></div></div>` : ""}<details class="mb"><summary>Extraction coverage & notices (${ex.warnings.length})</summary><div>${ex.warnings.map((w) => `<div class="note warn mb">${esc(w)}</div>`).join("")}</div></details><div class="tabs"><button data-action="inspect-tab" data-tab="chunks" class="${inspectTab === "chunks" ? "active" : ""}">Searchable chunks & visuals</button><button data-action="inspect-tab" data-tab="elements" class="${inspectTab === "elements" ? "active" : ""}">All extracted elements</button><button data-action="inspect-tab" data-tab="versions" class="${inspectTab === "versions" ? "active" : ""}">Index versions</button></div>${inspectTab === "elements" ? elementsView(ex.elements) : inspectTab === "chunks" ? chunksView() : versionsView(detail.indexes)}` : empty("Nothing extracted yet.", "Choose a retrieval mode and run extraction above.")}</div>`
   );
 }
 function elementsView(elements) {
@@ -360,19 +588,62 @@ function elementsView(elements) {
       "",
     )}</div>${selected.length > 80 ? '<p class="footer-note">Showing the first 80 matches. Filter by type or text to inspect more.</p>' : ""}`;
 }
-function chunksView(chunks) {
-  return chunks.length
-    ? `<div class="note mb">${chunks.length} chunks. Source IDs, offsets, page numbers and visual links are retained. Model-generated topic titles do not replace original source text.</div><div class="list">${chunks
-        .slice(0, 100)
-        .map(
-          (c) =>
-            `<details class="source-card"><summary>${esc(c.id)} · ${esc(c.title || c.kinds?.join(", "))} <span class="muted">${fmt(c.text.length)} characters</span></summary><div><p>${esc(c.text)}</p><div class="doc-meta">Source elements: ${esc(c.element_ids?.join(", "))} · Pages: ${esc(c.pages?.join(", ") || "n/a")}</div><pre>${json(c.offsets)}</pre></div></details>`,
+function chunkVisual(element) {
+  const media = element.media_asset;
+  const generatedText =
+    !element.description && element.description_status === "model_generated";
+  return `<article class="chunk-visual">${element.asset ? `<a href="${fileURL(element.asset)}" target="_blank" rel="noopener"><img src="${fileURL(element.asset)}" loading="lazy" alt="${esc(element.kind + " " + element.id)}"></a>` : ""}<div class="element-content"><div class="actions mb">${badge(element.kind)}<code>${esc(element.id)}</code>${element.page ? badge("Page " + element.page) : ""}</div>${element.description ? `<b>Generated description</b><p class="preserve-text">${esc(element.description)}</p>` : ""}${element.text ? `<b>${generatedText ? "Model-generated visual text" : "Extracted text / OCR"}</b><p class="preserve-text">${esc(element.text)}</p>` : ""}${element.rows ? `<details class="section-space"><summary>Extracted table rows</summary><pre>${json(element.rows)}</pre></details>` : ""}${media ? `<p>${timecode(element.start_seconds)}–${timecode(element.end_seconds)}</p><a class="btn small" href="${fileURL(media)}#t=${element.start_seconds}" target="_blank" rel="noopener">Open original recording ↗</a>` : ""}<p class="footer-note">Original element context. The exact text retained in this chunk is shown alongside it.</p></div></article>`;
+}
+function chunksView() {
+  const target = selectedInspectionTarget();
+  if (!target)
+    return empty(
+      "No chunks yet.",
+      "Preview chunks or build an index to inspect source boundaries.",
+    );
+  const targets = inspectionTargets(),
+    snapshot = chunkInspection;
+  const picker = `<div class="field"><label for="inspection-snapshot">Inspect saved index or preview</label><select id="inspection-snapshot" data-change="inspection-snapshot">${targets.map((item) => `<option value="${esc(item.id)}" ${item.id === target.id ? "selected" : ""}>${esc(item.label)}</option>`).join("")}</select></div>`;
+  if (!snapshot)
+    return (
+      picker +
+      `<div class="note warn">${esc(chunkInspectionError || "Loading the saved chunks and source visuals…")}</div>`
+    );
+  const fields = snapshot.fields.filter((field) => field.searchable);
+  const kinds = [
+    ...new Set(snapshot.chunks.flatMap((chunk) => chunk.kinds || [])),
+  ];
+  const matches = snapshot.chunks.filter(
+    (chunk) =>
+      (!chunkKind || chunk.kinds?.includes(chunkKind)) &&
+      (!chunkSearch ||
+        (
+          chunk.id +
+          " " +
+          chunk.text +
+          " " +
+          JSON.stringify(chunk.searchable_values)
         )
-        .join("")}</div>`
-    : empty(
-        "No chunks yet.",
-        "Preview chunks or build an index to inspect source boundaries.",
-      );
+          .toLowerCase()
+          .includes(chunkSearch.toLowerCase())),
+  );
+  const pages = Math.max(1, Math.ceil(matches.length / 20));
+  chunkPage = Math.min(chunkPage, pages - 1);
+  const chunks = matches.slice(chunkPage * 20, (chunkPage + 1) * 20);
+  return (
+    picker +
+    `<div class="note mb">${target.id.startsWith("preview:") ? "Preview only: these chunks have not been published to an index." : "Showing the saved index and its original extraction revision."} Unsaved field settings take effect after a new build.<div class="actions section-space">Searchable fields: ${fields.map((field) => badge(field.label)).join("")}</div></div><div class="toolbar"><select data-change="chunk-kind" aria-label="Filter chunks by element type"><option value="">All chunk types</option>${kinds.map((kind) => `<option value="${esc(kind)}" ${kind === chunkKind ? "selected" : ""}>${esc(kind)}</option>`).join("")}</select><input id="chunk-search" value="${esc(chunkSearch)}" placeholder="Find a chunk ID, title or content…" aria-label="Find a chunk"><button class="btn small" data-action="search-chunks">Search chunks</button></div><p class="small muted mb">${fmt(matches.length)} matching chunks · page ${chunkPage + 1} of ${pages}. Open a chunk to inspect its full contents and linked visuals.</p><div class="list">${
+      chunks
+        .map((chunk, position) => {
+          const visuals = chunk.elements.filter(
+            (element) => element.asset || element.rows || element.media_asset,
+          );
+          return `<details class="knowledge-chunk" ${position === 0 ? "open" : ""}><summary><code>${esc(chunk.id)}</code> · ${esc(chunk.title || chunk.kinds?.join(", ") || "Untitled chunk")}<span class="small muted"> · ${fmt(chunk.text.length)} characters${visuals.length ? " · " + visuals.length + " source visuals / recordings" : ""}</span></summary><div class="knowledge-chunk-body ${visuals.length ? "with-visuals" : ""}"><div><h3 class="mb">Searchable field values</h3>${fields.map((field) => `<div class="indexed-field"><b>${esc(field.label)}</b> <code>${esc(field.name)}</code><div class="indexed-value preserve-text">${esc(Array.isArray(chunk.searchable_values[field.name]) ? chunk.searchable_values[field.name].join(", ") : (chunk.searchable_values[field.name] ?? "")) || '<span class="muted">Empty in this chunk</span>'}</div></div>`).join("")}${!fields.some((field) => field.name === "content") ? `<div class="indexed-field"><b>Chunk text used for embeddings</b><p class="small muted">Keyword search is disabled for the content field in this saved index.</p><div class="indexed-value preserve-text">${esc(chunk.text)}</div></div>` : ""}<div class="doc-meta section-space">Source elements: ${esc(chunk.element_ids.join(", "))} · Pages: ${esc(chunk.pages?.join(", ") || "n/a")}</div><details class="section-space"><summary>Combined keyword-search text</summary><pre class="preserve-text">${esc(chunk.keyword_text)}</pre></details><details class="section-space"><summary>Chunk metadata & source offsets</summary><pre>${json({ offsets: chunk.offsets, metadata: chunk.filter_metadata })}</pre></details></div>${visuals.length ? `<div class="chunk-visuals">${visuals.map(chunkVisual).join("")}</div>` : ""}</div></details>`;
+        })
+        .join("") ||
+      empty("No matching chunks.", "Clear the search or element-type filter.")
+    }</div><div class="actions section-space"><button class="btn small" data-action="chunk-page" data-page="${chunkPage - 1}" ${chunkPage === 0 ? "disabled" : ""}>← Previous</button><span class="small muted">${chunkPage + 1} / ${pages}</span><button class="btn small" data-action="chunk-page" data-page="${chunkPage + 1}" ${chunkPage + 1 >= pages ? "disabled" : ""}>Next →</button></div>`
+  );
 }
 function versionsView(indexes) {
   return indexes.length
@@ -593,6 +864,9 @@ function connectionBody(form) {
     "cached_price",
     "embedding_price",
     "image_price",
+    "requests_per_minute",
+    "tokens_per_minute",
+    "requests_per_day",
   ])
     obj[key] = obj[key] === "" || obj[key] == null ? null : Number(obj[key]);
   obj.vision = data.has("vision");
@@ -603,6 +877,13 @@ function connectionBody(form) {
   obj.embedding_model = obj.embedding_model || "";
   obj.image_model = obj.image_model || "";
   return obj;
+}
+function providerPacingControls(c, tier) {
+  if (!["gemini", "groq"].includes(c.provider)) return "";
+  const free = tier === "free",
+    rpm = c.provider === "gemini" ? 2 : 6,
+    tpm = c.provider === "gemini" ? 10000 : 6000;
+  return `<details class="mb" ${free ? "open" : ""}><summary>Request pacing & provider allowance</summary><div class="note section-space mb">${free ? `Free-tier pacing is automatic. Blank limits use conservative app defaults: ${rpm} requests/minute and ${fmt(tpm)} estimated tokens/minute.` : "Enter limits to pace this connection. Blank paid-tier limits leave pacing to the provider."} These are app settings, not verified account quotas. Match your account’s limits in Google AI Studio or Groq Console. All profiles share a provider allowance unless you set a different quota group.</div><div class="grid two">${inputField("Requests per minute", "requests_per_minute", c.requests_per_minute ?? "", "number", free ? `Default: ${rpm}. Calls are spaced evenly.` : "Optional", 'min="1" max="10000"')}${inputField("Estimated tokens per minute", "tokens_per_minute", c.tokens_per_minute ?? "", "number", "Text, output and visual reserves are estimates, not exact provider token counts.", 'min="128" max="100000000"')}${inputField("Daily request cap (optional)", "requests_per_day", c.requests_per_day ?? "", "number", "App-only rolling 24-hour cap. Provider reset times may differ.", 'min="1" max="1000000"')}${inputField("Quota group (optional)", "quota_group", c.quota_group || "", "text", "Use the same group for profiles sharing a project or organization. Blank shares across this provider.", 'maxlength="100" pattern="[A-Za-z0-9 ._-]*"')}</div><p class="footer-note">The app honors reported cooldowns and keeps its allowance across restarts. Other applications using your account can still consume quota. Requests are not automatically retried or switched to a paid model.</p></details>`;
 }
 function modelPicker(c) {
   const live = modelInventory?.provider === c.provider ? modelInventory : null;
@@ -662,7 +943,7 @@ function settings() {
        ],
    tier,
    "This records your account setup. It does not change provider billing, unlock models or assume zero prices.",
- )}
+ )}${providerPacingControls(c, tier)}
  ${embeds ? inputField("Text embedding model / deployment", "embedding_model", c.embedding_model || "", "text", "Used only for Provider text embeddings. Gemini multimodal uses gemini-embedding-2.") : '<div class="note mb">For indexing, select local EmbeddingGemma / Qwen3 Embedding, CLIP, or a separate supported cloud embedding connection in Processing studio.</div>'}
  ${embeds ? inputField("Image generation model / deployment (optional)", "image_model", c.image_model || "", "text", "Image generation is separate from image understanding and requires model access and quota.") : ""}
  ${check("This answer model accepts images (verify with Test)", "vision", c.vision)}
@@ -742,7 +1023,10 @@ async function navigate(next) {
   page = next;
   location.hash = next;
   if (page === "monitoring") monitor = await api("/api/monitor");
-  if (page === "processing" && docId) await loadDetail();
+  if (page === "processing" && docId) {
+    await loadDetail();
+    await syncPipelineJobs();
+  }
   render();
   window.scrollTo(0, 0);
 }
@@ -763,16 +1047,137 @@ async function uploadFiles(files) {
     files.length + " source" + (files.length > 1 ? "s" : "") + " imported.",
   );
 }
+async function syncPipelineJobs(scope = docId) {
+  if (!scope || pipelineSyncing) return [];
+  pipelineSyncing = true;
+  try {
+    let fresh;
+    if (jobListAvailable) {
+      try {
+        fresh = (await api("/api/jobs?scope=" + encodeURIComponent(scope)))
+          .jobs;
+      } catch (error) {
+        if (error.status !== 404 && error.status !== 405) throw error;
+        jobListAvailable = false;
+      }
+    }
+    if (!fresh)
+      fresh = (await api("/api/state")).jobs.filter(
+        (job) => job.scope === scope,
+      );
+    state.jobs = [
+      ...fresh,
+      ...(state.jobs || []).filter((job) => job.scope !== scope),
+    ];
+    for (const job of fresh) {
+      if (
+        !Object.values(pipelineStages).some((stage) => stage.kind === job.kind)
+      )
+        continue;
+      const key = job.scope + ":" + job.kind,
+        previous = pipelineRuns.get(key);
+      const running = ["queued", "running"].includes(job.status);
+      if (!previous || job.created >= previous.created || running)
+        pipelineRuns.set(key, job);
+      if (running && !jobs.has(job.id)) {
+        jobs.set(job.id, job);
+        pollJob(job.id);
+      }
+    }
+    const changed =
+      scope === docId &&
+      fresh.some(
+        (job) =>
+          job.status === "completed" &&
+          ((job.result?.extraction_id &&
+            job.result.extraction_id !== detail?.extraction?.id) ||
+            (job.result?.index_id &&
+              job.result.index_id !== detail?.active_index) ||
+            (job.result?.preview_id &&
+              job.result.preview_id !== detail?.chunk_preview?.id)),
+      );
+    if (changed) {
+      readConfig();
+      await refresh();
+      render();
+    }
+    updatePipelineStatus();
+    return fresh;
+  } finally {
+    pipelineSyncing = false;
+  }
+}
 async function startJob(url, body, kind) {
-  const r = await post(url, body);
-  jobs.set(r.job_id, { id: r.job_id, kind });
-  render();
+  const scope = url.match(
+    /^\/api\/documents\/([^/]+)\/(extract|chunks|index)$/,
+  )?.[1];
+  const key = scope ? scope + ":" + kind : "";
+  const submitted = {
+    id: "pending-" + kind,
+    kind,
+    scope,
+    status: "submitting",
+    created: Date.now() / 1000,
+  };
+  if (scope) {
+    if (
+      [...jobs.values()].some((j) => j.scope === scope) ||
+      (scope === docId && pipelineBusy())
+    )
+      return;
+    pipelineRuns.set(key, submitted);
+    updatePipelineStatus();
+  }
+  let r;
+  try {
+    if (scope) {
+      const existing = await syncPipelineJobs(scope);
+      if (existing.some((job) => ["queued", "running"].includes(job.status))) {
+        if (pipelineRuns.get(key)?.id.startsWith("pending-"))
+          pipelineRuns.delete(key);
+        updatePipelineStatus();
+        return;
+      }
+    }
+    r = await post(url, body);
+  } catch (error) {
+    if (scope) {
+      if (pipelineRuns.get(key)?.id.startsWith("pending-"))
+        pipelineRuns.delete(key);
+      let existing = [];
+      try {
+        existing = await syncPipelineJobs(scope);
+      } catch {}
+      if (existing.some((job) => ["queued", "running"].includes(job.status))) {
+        updatePipelineStatus();
+        return;
+      }
+      pipelineRuns.set(key, {
+        ...submitted,
+        status: "failed",
+        error: error.message,
+      });
+      updatePipelineStatus();
+    }
+    throw error;
+  }
+  const job = { ...submitted, id: r.job_id, status: "queued" };
+  jobs.set(r.job_id, job);
+  if (scope) {
+    pipelineRuns.set(key, job);
+    updatePipelineStatus();
+  } else render();
   pollJob(r.job_id);
 }
 async function pollJob(id) {
   if (!jobs.has(id)) return;
   try {
     const j = await api("/api/jobs/" + id);
+    jobs.set(id, { ...jobs.get(id), ...j });
+    if (Object.values(pipelineStages).some((stage) => stage.kind === j.kind)) {
+      pipelineRuns.set(j.scope + ":" + j.kind, j);
+      updatePipelineStatus();
+    }
     const node = $(`[data-job-message="${id}"]`);
     if (node) node.textContent = " · " + (j.events.at(-1)?.message || j.status);
     if (["completed", "failed", "cancelled"].includes(j.status)) {
@@ -816,7 +1221,16 @@ async function pollJob(id) {
       }
     } else setTimeout(() => pollJob(id), 1500);
   } catch (e) {
-    toast(e.message, true);
+    const job = jobs.get(id);
+    if (
+      job?.scope &&
+      Object.values(pipelineStages).some((stage) => stage.kind === job.kind)
+    ) {
+      job.poll_error =
+        "Waiting to reconnect for a status update. The background job may still be running.";
+      pipelineRuns.set(job.scope + ":" + job.kind, job);
+      updatePipelineStatus();
+    } else toast(e.message, true);
     setTimeout(() => pollJob(id), 4000);
   }
 }
@@ -922,6 +1336,7 @@ async function handleAction(button) {
     return;
   }
   if (a === "pipeline") {
+    if (pipelineBusy()) return;
     const c = readConfig();
     if (!c.mode) throw Error("Choose a retrieval mode before processing.");
     if (c.overlap >= c.chunk_size)
@@ -960,7 +1375,19 @@ async function handleAction(button) {
     );
     return;
   }
+  if (a === "search-chunks") {
+    chunkSearch = $("#chunk-search").value;
+    chunkPage = 0;
+    render();
+    return;
+  }
+  if (a === "chunk-page") {
+    chunkPage = Number(button.dataset.page);
+    render();
+    return;
+  }
   if (a === "inspect-tab") {
+    if (button.dataset.tab === "chunks") await loadChunkInspection();
     readConfig();
     inspectTab = button.dataset.tab;
     render();
@@ -1275,7 +1702,10 @@ document.addEventListener("change", async (e) => {
       render();
       return;
     }
-    if (e.target.name === "auth_mode" && e.target.closest("#connection-form")) {
+    if (
+      ["auth_mode", "account_tier"].includes(e.target.name) &&
+      e.target.closest("#connection-form")
+    ) {
       connectionDraft = connectionBody($("#connection-form"));
       render();
       return;
@@ -1296,7 +1726,24 @@ document.addEventListener("change", async (e) => {
       await uploadFiles([...e.target.files]);
       return;
     }
+    if (e.target.dataset.change === "inspection-snapshot") {
+      inspectSnapshotId = e.target.value;
+      chunkPage = 0;
+      await loadChunkInspection();
+      render();
+      return;
+    }
+    if (e.target.dataset.change === "chunk-kind") {
+      chunkKind = e.target.value;
+      chunkPage = 0;
+      render();
+      return;
+    }
     if (e.target.dataset.change === "document") {
+      inspectSnapshotId = "";
+      chunkSearch = "";
+      chunkKind = "";
+      chunkInspection = null;
       if (page === "processing") readConfig();
       docId = e.target.value;
       messages = [];
@@ -1550,9 +1997,10 @@ window.addEventListener("hashchange", () => {
     for (const j of state.jobs.filter((j) =>
       ["queued", "running"].includes(j.status),
     )) {
-      jobs.set(j.id, { id: j.id, kind: j.kind });
+      jobs.set(j.id, j);
       pollJob(j.id);
     }
+    if (page === "processing") await syncPipelineJobs();
     render();
   } catch (e) {
     $("#app").innerHTML =
@@ -1561,6 +2009,23 @@ window.addEventListener("hashchange", () => {
       "</small></div>";
   }
 })();
+setInterval(async () => {
+  if (page === "processing" && docId) {
+    try {
+      await syncPipelineJobs();
+    } catch {
+      for (const job of jobs.values()) {
+        if (job.scope === docId)
+          job.poll_error =
+            "Waiting to reconnect for a status update. The background job may still be running.";
+      }
+      updatePipelineStatus();
+    }
+  }
+}, 3000);
+window.addEventListener("focus", () => {
+  if (page === "processing") syncPipelineJobs().catch(() => {});
+});
 setInterval(async () => {
   if (page === "monitoring" && !$("#modal").open && jobs.size === 0) {
     try {
@@ -1809,7 +2274,7 @@ function indexFieldControls() {
   const schema = state.index_schema;
   if (!schema) return "";
   const flags = ["searchable", "filterable", "sortable", "retrievable"];
-  return `<div class="card mb"><div class="card-header"><div><h3>Configure your index fields</h3><p>Choose how each field behaves before building a new index version.</p></div><button type="button" class="btn small" data-action="reset-index-fields">Restore defaults</button></div><div class="note mb"><b>Searchable</b>: keyword matching. <b>Filterable</b>: exact values and ranges. <b>Sortable</b>: service-side ordering. <b>Retrievable</b>: included in search responses. Collection fields cannot be sorted. Text and source identifiers required for grounded answers stay enabled.</div><div class="table-wrap"><table><thead><tr><th>Field</th>${flags.map((f) => "<th>" + f[0].toUpperCase() + f.slice(1) + "</th>").join("")}</tr></thead><tbody>${schema.fields
+  return `<div class="card mb"><div class="card-header"><div><h3>Configure your index fields</h3><p>Choose how each field behaves before building a new index version.</p></div><button type="button" class="btn small" data-action="reset-index-fields">Restore defaults</button></div><div class="note mb"><b>Searchable</b>: keyword matching. <b>Filterable</b>: exact values and ranges. <b>Sortable</b>: service-side ordering. <b>Retrievable</b>: included in search responses. Collection fields cannot be sorted. Text and source identifiers required for grounded answers stay enabled.</div><div class="table-wrap index-fields-scroll" role="region" aria-label="Index field settings" tabindex="0"><table><thead><tr><th>Field</th>${flags.map((f) => "<th>" + f[0].toUpperCase() + f.slice(1) + "</th>").join("")}</tr></thead><tbody>${schema.fields
     .map((f) => {
       const settings = { ...f.defaults, ...config.index_fields?.[f.name] };
       return `<tr><td><b>${esc(f.label)}</b><br><code>${esc(f.name)}</code><small class="muted"> · ${esc(f.type.replace("Edm.", ""))}</small></td>${flags
