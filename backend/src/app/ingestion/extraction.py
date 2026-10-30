@@ -18,6 +18,7 @@ from bs4 import BeautifulSoup
 from PIL import Image, ImageDraw
 
 from app.core import store as s
+from app.core.progress import report
 from app.integrations import providers as p
 
 MEDIA = {".mp3", ".mp4", ".wav", ".m4a", ".mov", ".webm", ".ogg", ".flac", ".aac", ".mkv", ".avi"}
@@ -137,6 +138,11 @@ class Extractor:
         self.warnings = []
         self.section = ""
         self.asset_id = doc["id"] + "-" + budget.run
+        self.track_progress = True
+
+    def progress(self, stage, message, percent, **details):
+        if self.track_progress:
+            report(self.budget.run, stage, message, percent, **details)
 
     def add(self, kind, text="", **meta):
         id = f"e{len(self.elements) + 1:05d}"
@@ -156,6 +162,7 @@ class Extractor:
         return item
 
     def run(self):
+        self.progress("extraction", "Reading the source", 0)
         path = s.asset_path(self.doc["path"])
         ext = path.suffix.lower()
         if self.doc.get("is_bundle"):
@@ -177,6 +184,7 @@ class Extractor:
             self.add("image", "", asset=a, description_status="pending")
         else:
             self.text(path)
+        self.progress("extraction", "Source elements extracted", 65)
         self.enrich()
         if not self.elements:
             raise ValueError(
@@ -186,8 +194,15 @@ class Extractor:
 
     def repository(self, path):
         manifest = json.loads(path.read_text())
-        for entry in manifest:
-            s.event(self.budget.run, "extraction", "Reading repository file", file=entry["name"])
+        for position, entry in enumerate(manifest):
+            self.progress(
+                "extraction",
+                f"Reading repository file {position + 1}/{len(manifest)}",
+                65 * position / len(manifest),
+                completed=position,
+                total=len(manifest),
+                unit="files",
+            )
             child_doc = {
                 **self.doc,
                 "name": entry["name"],
@@ -196,6 +211,7 @@ class Extractor:
                 "id": self.doc["id"] + "-" + s.uid(),
             }
             child = Extractor(child_doc, self.cfg, self.c, self.budget)
+            child.track_progress = False
             # Enrich once after all files are extracted, keeping each source path.
             file = s.asset_path(entry["path"])
             ext = file.suffix.lower()
@@ -237,7 +253,14 @@ class Extractor:
                     "This local preview supports PDFs up to 500 pages. Split the document first."
                 )
             for number, page in enumerate(pdf, 1):
-                s.event(self.budget.run, "extraction", f"Extracting page {number}/{len(pdf)}")
+                self.progress(
+                    "extraction",
+                    f"Extracting page {number}/{len(pdf)}",
+                    65 * (number - 1) / len(pdf),
+                    completed=number - 1,
+                    total=len(pdf),
+                    unit="pages",
+                )
                 preview = asset(
                     self.asset_id,
                     f"page-{number}.png",
@@ -455,7 +478,17 @@ class Extractor:
         from docx import Document
 
         document = Document(path)
-        for node in document.element.body:
+        nodes = list(document.element.body)
+        for position, node in enumerate(nodes):
+            if position % 20 == 0:
+                self.progress(
+                    "extraction",
+                    f"Reading Word block {position + 1}/{len(nodes)}",
+                    65 * position / len(nodes),
+                    completed=position,
+                    total=len(nodes),
+                    unit="document blocks",
+                )
             tag = node.tag.rsplit("}", 1)[-1]
             if tag == "p":
                 text = (
@@ -654,7 +687,15 @@ class Extractor:
             import xlrd
 
             book = xlrd.open_workbook(path)
-            for sheet in book.sheets():
+            for position, sheet in enumerate(book.sheets()):
+                self.progress(
+                    "extraction",
+                    f"Reading sheet {position + 1}/{book.nsheets}",
+                    65 * position / book.nsheets,
+                    completed=position,
+                    total=book.nsheets,
+                    unit="sheets",
+                )
                 self.section = sheet.name
                 for start in range(0, sheet.nrows, 100):
                     rows = [
@@ -681,7 +722,15 @@ class Extractor:
         if sum(ws.max_row * ws.max_column for ws in book) > 2_000_000:
             raise ValueError("Workbook exceeds 2 million cells; split the workbook.")
         cached = openpyxl.load_workbook(path, data_only=True)
-        for ws in book:
+        for position, ws in enumerate(book):
+            self.progress(
+                "extraction",
+                f"Reading sheet {position + 1}/{len(book.sheetnames)}",
+                65 * position / len(book.sheetnames),
+                completed=position,
+                total=len(book.sheetnames),
+                unit="sheets",
+            )
             self.section = ws.title
             self.add("section_header", ws.title, sheet=ws.title)
             for start in range(1, ws.max_row + 1, 100):
@@ -936,6 +985,8 @@ class Extractor:
     def media(self, path):
         import imageio_ffmpeg
 
+        self.progress("transcription", "Preparing the recording’s audio track", 2, waiting=True)
+
         out = s.DATA / "assets" / self.asset_id
         out.mkdir(exist_ok=True)
         prefix = out / "speech-%04d.wav"
@@ -971,6 +1022,12 @@ class Extractor:
         if self.cfg.transcription == "local":
             from faster_whisper import WhisperModel
 
+            self.progress(
+                "transcription",
+                "Loading the local speech model (the first run may download it)",
+                5,
+                waiting=True,
+            )
             model = WhisperModel(
                 self.cfg.whisper_model,
                 device="cpu",
@@ -978,8 +1035,14 @@ class Extractor:
                 download_root=str(s.DATA / "models"),
             )
         for i, packet in enumerate(packets):
-            s.event(
-                self.budget.run, "transcription", f"Transcribing segment {i + 1}/{len(packets)}"
+            self.progress(
+                "transcription",
+                f"Transcribing segment {i + 1}/{len(packets)}",
+                10 + 55 * i / len(packets),
+                completed=i,
+                total=len(packets),
+                unit="audio segments",
+                waiting=True,
             )
             if self.cfg.transcription == "local":
                 segments, _ = model.transcribe(str(packet), vad_filter=True)
@@ -1008,6 +1071,14 @@ class Extractor:
         )
 
     def enrich(self):
+        visuals = [
+            item
+            for item in self.elements
+            if item["kind"] in {"image", "chart", "figure_candidate", "table"}
+            and item.get("asset")
+            and self.cfg.describe_visuals
+        ]
+        processed = 0
         for item in self.elements:
             if (
                 item["kind"] in {"image", "chart", "figure_candidate", "table"}
@@ -1019,6 +1090,15 @@ class Extractor:
                     and self.c.get("vision")
                     and item.get("description_status") != "model_generated"
                 ):
+                    self.progress(
+                        "visual-descriptions",
+                        f"Describing visual {processed + 1}/{len(visuals)}",
+                        65 + 30 * processed / len(visuals),
+                        completed=processed,
+                        total=len(visuals),
+                        unit="visuals",
+                        waiting=True,
+                    )
                     surrounding = "\n".join(
                         e["text"][:1000]
                         for e in self.elements
@@ -1045,6 +1125,16 @@ class Extractor:
                         warning = "Vision unavailable: visual content cannot be described from pixels. Existing table data/alt text is usable; other visuals remain uncaptioned until a vision model is configured."
                         if warning not in self.warnings:
                             self.warnings.append(warning)
+                processed += 1
+                self.progress(
+                    "visual-descriptions",
+                    f"Reviewed {processed}/{len(visuals)} visuals",
+                    65 + 30 * processed / len(visuals),
+                    completed=processed,
+                    total=len(visuals),
+                    unit="visuals",
+                )
+        self.progress("preprocessing", "Finalizing the extracted element inventory", 95)
         # Mark repeated margins but retain them in the inventory for user review.
         margins = Counter(
             e["text"].strip() for e in self.elements if e["kind"] in {"header", "footer"}

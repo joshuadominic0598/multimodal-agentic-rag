@@ -62,7 +62,22 @@ def submit(kind, fn, *args, scope=""):
             result = fn(*args, id)
             if s.get("jobs", id).get("cancel"):
                 raise ValueError("Cancelled by user.")
-            s.patch("jobs", id, status="completed", finished=s.now(), result=result, error=None)
+            progress = {
+                **s.get("jobs", id).get("progress", {}),
+                "percent": 100,
+                "message": f"{kind} completed",
+                "waiting": False,
+                "updated": s.now(),
+            }
+            s.patch(
+                "jobs",
+                id,
+                status="completed",
+                finished=s.now(),
+                result=result,
+                error=None,
+                progress=progress,
+            )
             s.event(id, "complete", f"{kind} completed")
         except Exception as exc:
             message = p.safe_error(exc)
@@ -86,6 +101,17 @@ def job(id: str):
         [e for e in s.rows("events") if e["run_id"] == id], key=lambda x: x["time"]
     )
     return j
+
+def document_jobs(scope: str):
+    latest = {}
+    active = []
+    for item in s.rows("jobs"):
+        if item.get("scope") != scope:
+            continue
+        latest.setdefault(item["kind"], item)
+        if item["status"] in {"queued", "running"}:
+            active.append(item)
+    return list({item["id"]: item for item in [*active, *latest.values()]}.values())
 
 def cancel(id: str):
     return s.patch("jobs", id, cancel=True)

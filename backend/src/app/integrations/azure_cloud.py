@@ -11,6 +11,7 @@ import httpx
 import numpy as np
 
 from app.core import store as s
+from app.core.progress import report
 from app.integrations import azure_auth as auth
 from app.integrations import providers as p
 from app.search import index_schema as schema
@@ -535,8 +536,10 @@ def publish(index, all_vec, profile, plan, budget):
         ]
         batch = []
         size = 0
+        uploaded = 0
 
         def upload(packet):
+            nonlocal uploaded
             check(budget.run)
             r, _ = request(
                 profile,
@@ -559,6 +562,16 @@ def publish(index, all_vec, profile, plan, budget):
                     "Azure Search rejected part of the upload. This candidate was not activated; inspect the publication in Azure workspace."
                 )
             s.event(budget.run, "azure-upload", f"Uploaded {len(packet)} chunks", index=name)
+            uploaded += len(packet)
+            report(
+                budget.run,
+                "azure-upload",
+                f"Uploaded {uploaded}/{len(documents)} chunks to Azure AI Search",
+                85 + 10 * uploaded / len(documents),
+                completed=uploaded,
+                total=len(documents),
+                unit="chunks uploaded",
+            )
 
         for obj in documents:
             length = len(json.dumps(obj, ensure_ascii=False).encode())
@@ -575,6 +588,13 @@ def publish(index, all_vec, profile, plan, budget):
         if batch:
             upload(batch)
         s.patch("azure_publications", id, status="verifying")
+        report(
+            budget.run,
+            "azure-verification",
+            "Verifying the published Search index and source references",
+            97,
+            waiting=True,
+        )
         # Search visibility is eventually consistent. These are bounded read-only polls.
         visible = False
         for _ in range(30):

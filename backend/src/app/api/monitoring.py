@@ -18,6 +18,10 @@ def trace(run: str):
 def job(id: str):
     return jobs.job(id)
 
+@router.get("/api/jobs")
+def document_jobs(scope: str):
+    return {"jobs": jobs.document_jobs(scope)}
+
 @router.post("/api/jobs/{id}/cancel")
 def cancel(id: str):
     return jobs.cancel(id)

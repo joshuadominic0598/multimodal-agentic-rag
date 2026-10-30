@@ -10,6 +10,7 @@ from pathlib import Path
 from urllib.parse import quote, urlparse
 
 from app.core import store as s
+from app.core.progress import report
 from app.ingestion.extraction import Extractor, asset, png, render_table, table_text
 from app.integrations import azure_cloud as cloud
 
@@ -57,6 +58,7 @@ def selected_pages(pages, total):
     return result
 
 def extract(doc, cfg, c, budget):
+    report(budget.run, "azure-layout", "Preparing Azure Document Intelligence analysis", 2)
     profile, plan = cloud.consume_plan(doc, cfg, "extract", budget.run)
     info = cloud.source_info(doc, cfg, profile)
     expected = selected_pages(cfg.azure_pages, info["source_pages"])
@@ -94,6 +96,13 @@ def extract(doc, cfg, c, budget):
         endpoint=profile["document_endpoint"],
     )
     # A single analyze submission: polling never resends a document.
+    report(
+        budget.run,
+        "azure-layout",
+        "Waiting for Azure Layout analysis; Azure does not report page-by-page progress",
+        10,
+        waiting=True,
+    )
     r, call_id = cloud.request(
         profile,
         "document",
@@ -161,6 +170,7 @@ def extract(doc, cfg, c, budget):
     )
     s.patch("azure_analyses", analysis_id, status="completed", raw_json_asset=raw)
     analyzed = result.get("analyzeResult", {})
+    report(budget.run, "azure-layout", "Azure analysis returned; mapping the document elements", 45)
     if analyzed.get("modelId") != "prebuilt-layout":
         raise ValueError("Azure returned a different model. Expected prebuilt-layout.")
     returned = {x["pageNumber"] for x in analyzed.get("pages", [])}
@@ -196,6 +206,15 @@ def extract(doc, cfg, c, budget):
         want_figures,
     )
     elements = mapper.run()
+    report(
+        budget.run,
+        "azure-layout",
+        "Azure elements extracted and mapped",
+        65,
+        completed=actual,
+        total=actual,
+        unit="returned pages",
+    )
     # Captions are optional enrichment after Azure entity extraction, never a replacement parser.
     if cfg.describe_visuals:
         helper = Extractor(doc, cfg, c, budget)

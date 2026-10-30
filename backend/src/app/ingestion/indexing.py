@@ -9,6 +9,7 @@ import threading
 import numpy as np
 
 from app.core import store as s
+from app.core.progress import report
 from app.core.schemas import Pipeline
 from app.ingestion.extraction import Extractor
 from app.integrations import providers as p
@@ -339,6 +340,7 @@ def extract_document(doc_id, config, run):
         elements, warnings = Extractor(doc, cfg, c, budget).run()
     ensure_active(run)
     revision = s.uid()
+    report(run, "saving", "Saving the extracted elements and source references", 98)
     s.put(
         "extractions",
         revision,
@@ -365,6 +367,7 @@ def extract_document(doc_id, config, run):
     return {"extraction_id": revision, "count": len(elements), "warnings": warnings}
 
 def preview_chunks(doc_id, config, run):
+    report(run, "chunking", "Preparing chunk boundaries", 5, waiting=True)
     cfg = Pipeline(**config)
     doc = s.get("documents", doc_id, True)
     schema.configure(cfg.index_fields)
@@ -374,6 +377,15 @@ def preview_chunks(doc_id, config, run):
         extraction["elements"], cfg, c, p.Budget(run, cfg.max_calls, cfg.budget_usd)
     )
     id = s.uid()
+    report(
+        run,
+        "chunking",
+        "Saving the chunk preview",
+        95,
+        completed=len(chunks),
+        total=len(chunks),
+        unit="chunks",
+    )
     s.put(
         "chunk_previews",
         id,
@@ -389,6 +401,7 @@ def preview_chunks(doc_id, config, run):
     return {"preview_id": id, "chunks": chunks, "count": len(chunks)}
 
 def build_index(doc_id, config, run):
+    report(run, "preparation", "Checking index settings and the source extraction", 0)
     cfg = Pipeline(**config)
     doc = s.get("documents", doc_id, True)
     schema.configure(cfg.index_fields)
@@ -438,7 +451,7 @@ def build_index(doc_id, config, run):
         from app.integrations.azure_cloud import resolve
 
         ec = cloud_profile or resolve(cfg.azure_profile_id)
-    s.event(run, "chunking", f"Building {cfg.strategy} chunks")
+    report(run, "chunking", f"Building {cfg.strategy} chunks", 5, waiting=True)
     preview = s.get("chunk_previews", doc.get("chunk_preview", ""))
     chunks = (
         preview["chunks"]
@@ -449,17 +462,31 @@ def build_index(doc_id, config, run):
         else make_chunks(extraction["elements"], cfg, c, budget)
     )
     index_id = s.uid()
+    report(
+        run,
+        "embedding",
+        "Chunk boundaries ready; preparing the embedding model",
+        30,
+        completed=0,
+        total=len(chunks),
+        unit="chunks",
+        waiting=True,
+    )
     all_vec = []
     for start in range(0, len(chunks), 16):
         job = s.get("jobs", run)
         if job and job.get("cancel"):
             raise ValueError("Cancelled by user.")
         packet = chunks[start : start + 16]
-        s.event(
+        report(
             run,
             "embedding",
             f"Embedding chunks {start + 1}–{start + len(packet)} of {len(chunks)}",
-            engine=cfg.embedding,
+            30 + 55 * start / len(chunks),
+            completed=start,
+            total=len(chunks),
+            unit="chunks",
+            waiting=True,
         )
         all_vec.extend(
             vectors(
@@ -472,6 +499,15 @@ def build_index(doc_id, config, run):
                 ec,
                 budget,
             )
+        )
+        report(
+            run,
+            "embedding",
+            f"Embedded {start + len(packet)}/{len(chunks)} chunks",
+            30 + 55 * (start + len(packet)) / len(chunks),
+            completed=start + len(packet),
+            total=len(chunks),
+            unit="chunks",
         )
     if len(all_vec) != len(chunks):
         raise ValueError("Embedding count did not match chunks.")
@@ -516,6 +552,7 @@ def build_index(doc_id, config, run):
             )
         )
     else:
+        report(run, "saving", "Saving vectors and the keyword index", 90)
         with s.LOCK, s.db() as db:
             for chunk, v in zip(chunks, all_vec):
                 db.execute(
@@ -527,6 +564,7 @@ def build_index(doc_id, config, run):
                     (index_id, chunk["id"], schema.keyword_text(chunk, cfg.index_fields)),
                 )
     ensure_active(run)
+    report(run, "activation", "Activating the verified index", 99)
     record = s.put("indexes", index_id, record)
     with s.LOCK:
         ensure_active(run)
