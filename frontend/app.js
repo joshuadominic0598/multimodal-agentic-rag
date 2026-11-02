@@ -1236,7 +1236,7 @@ async function pollJob(id) {
 }
 function modal(html) {
   const dialog = $("#modal");
-  dialog.innerHTML = `<div class="actions mb"><button class="btn small" data-action="close-modal">✕ Close</button></div>${html}`;
+  dialog.innerHTML = `<div class="actions modal-actions mb"><button class="btn small" data-action="close-modal">✕ Close</button></div>${html}`;
   if (!dialog.open) dialog.showModal();
 }
 async function openBrowse(path = "") {

@@ -1216,6 +1216,9 @@ dialog {
   color: var(--ink);
   box-shadow: 0 20px 100px #00000088;
 }
+.modal-actions {
+  justify-content: flex-end;
+}
 dialog::backdrop {
   background: #000000a8;
   backdrop-filter: blur(3px);
