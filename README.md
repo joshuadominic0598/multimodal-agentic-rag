@@ -17,7 +17,7 @@ Your notes, reports, spreadsheets and recordings hold more than paragraphs. They
 
 **Choose how it becomes knowledge.** Pick preprocessing and chunking options, preview the chunks and build an index. Agentic chunking asks a model to organize source units into topic groups while preserving the source text and order.
 
-**Start a conversation.** The research agent clarifies your scope, searches the selected document, inspects the evidence and answers with citations. Follow a citation to its source; ask a follow-up while keeping the conversation in context.
+**Start a conversation.** The research agent searches the selected working document by default, asks only when clarification is needed, inspects the evidence and answers with citations. Broad questions get a topic overview and an invitation to explore further. Follow a citation to its source; ask a follow-up while keeping the conversation in context.
 
 > “Explain this chart and show the page it came from.”  
 > “Which rows support that conclusion?”  
@@ -60,7 +60,7 @@ The app connects resources you already own. You review cloud operations before f
 1. Run **`scripts/setup.command`** once for a fresh installation, then **`scripts/start.command`**. Open [Document Knowledge Studio](http://127.0.0.1:8020).
 2. Add a model in **Connections & settings**, or test the default local Ollama profile. For Azure, also connect your services in **Azure workspace**.
 3. Import a source in **Source library**. In **Processing studio**, choose your workflow and retrieval mode, inspect extraction, preview chunks and build the index.
-4. Open **Research agent**, ask a question, clarify the scope and explore the answer's source references.
+4. Open **Research agent**, ask a question and explore the answer's source references.
 
 Your library, conversations and traces are stored on your computer. Selected files or retrieved content are sent to cloud services when you choose those services. Local storage alone does not make every configured workflow offline.
 

@@ -9,7 +9,10 @@ from app.integrations import providers as p
 
 def test_always_clarifies_without_model_call(indexed):
     doc, index = indexed
-    r = answer({"document_id": doc["id"], "message": "Explain the source."}, "clarify")
+    r = answer(
+        {"document_id": doc["id"], "message": "Explain the source.", "clarify_policy": "always"},
+        "clarify",
+    )
     assert r["status"] == "clarification" and not r["sources"]
     assert not [x for x in s.rows("calls") if x["run_id"] == "clarify"]
 
@@ -57,17 +60,23 @@ def test_agent_refines_and_rejects_fake_citations(indexed, monkeypatch):
     ]
     assert len(searches) == 2
 
-def test_grounded_answer_and_memory(indexed, monkeypatch):
+def test_selected_document_is_default_scope_and_answer_updates_memory(indexed, monkeypatch):
     doc, index = indexed
     target = next(x["id"] for x in index["chunks"] if "convert" in x["text"])
     outputs = iter(
         [
-            {"queries": ["solar"]},
+            {"queries": ["solar"], "filters": {"pages": [5]}},
             {"sufficient": True},
             ("Panels convert sunlight to electricity [" + target + "].", []),
         ]
     )
-    monkeypatch.setattr(p, "generate", lambda *a, **k: next(outputs))
+    prompts = []
+
+    def generate(connection, budget, system, prompt, *images, **options):
+        prompts.append(prompt)
+        return next(outputs)
+
+    monkeypatch.setattr(p, "generate", generate)
     c = {
         "id": "test",
         "model": "test",
@@ -77,12 +86,67 @@ def test_grounded_answer_and_memory(indexed, monkeypatch):
         "context_chars": 20000,
     }
     r = answer(
-        {"document_id": doc["id"], "message": "What do panels do?", "clarified": True},
+        {
+            "document_id": doc["id"],
+            "message": "Tell me what this document says about solar energy.",
+        },
         "grounded",
         c,
     )
     assert r["citations"] == [target] and r["status"] == "completed"
+    assert "working document is already selected" in prompts[0]
+    assert doc["name"] in prompts[0] and index["id"] in prompts[0]
+    assert "Never ask the user to reconfirm the selected document" in prompts[0]
+    assert "first summarize the supported topics" in prompts[-1]
+    assert "offer to explore one of those topics further" in prompts[-1]
+    assert "Do not merely paste a list of retrieved excerpts" in prompts[-1]
+    assert not s.get("sessions", r["session_id"]).get("pending_question")
+    assert r["retrieval"]["applied_filters"] == []
     assert s.get("memory", "summary-" + r["session_id"])["type"] == "conversation_scope"
+
+def test_meaningful_clarification_preserves_question_and_retrieval_scope(indexed, monkeypatch):
+    doc, index = indexed
+    question = "Compare their efficiency."
+    text = "Which two technologies do you want to compare?"
+    connection = {
+        "id": "test",
+        "model": "test",
+        "provider": "gemini",
+        "vision": False,
+        "max_output": 1000,
+        "context_chars": 20000,
+    }
+    monkeypatch.setattr(p, "generate", lambda *args, **kwargs: {"clarifying_question": text})
+    result = answer(
+        {
+            "document_id": doc["id"],
+            "message": question,
+            "filters": {"kinds": ["text"]},
+            "search_mode": "keyword",
+        },
+        "meaningful-clarification",
+        connection,
+    )
+    assert result["status"] == "clarification" and result["answer"] == text
+    session = s.get("sessions", result["session_id"])
+    assert session["pending_question"] == question
+    assert session["pending_retrieval"]["filters"] == {"kinds": ["text"]}
+    assert session["messages"][-1]["content"] == text
+    assert s.get("answers", result["run_id"])["status"] == "clarification"
+    resumed = answer(
+        {
+            "document_id": doc["id"],
+            "session_id": session["id"],
+            "message": question,
+            "clarified": True,
+            "clarification_answer": "Solar panels and batteries.",
+            "preview": True,
+        },
+        "resume-meaningful-clarification",
+    )
+    assert resumed["status"] == "preview"
+    assert resumed["retrieval"]["filters"] == {"kinds": ["text"]}
+    assert resumed["retrieval"]["search_mode"] == "keyword"
 
 def test_dataset_unknown_chunk_rejected(indexed):
     doc, index = indexed

@@ -40,6 +40,62 @@ function app() {
 }
 const run = (context, code) => vm.runInContext(code, context);
 
+test("chat uses the selected document without forcing a scope clarification", async () => {
+  const context = app();
+  run(
+    context,
+    `class FormData {
+      get(key) { return {message:"Explain advanced agentic RAG",connection_id:"model-a",max_passes:"2"}[key] ?? null; }
+      has() { return false; }
+    }
+    readResearchOptions=()=>{};
+    let submittedChat;
+    startJob=async(url,payload)=>{submittedChat={url,payload};};`,
+  );
+  await run(context, "sendChat({})");
+  assert.equal(run(context, "submittedChat.url"), "/api/chat");
+  assert.equal(run(context, "submittedChat.payload.document_id"), "document-a");
+  assert.equal(
+    run(context, "submittedChat.payload.clarify_policy"),
+    "when_needed",
+  );
+  assert.equal(run(context, "submittedChat.payload.clarified"), false);
+  assert.equal(run(context, "submittedChat.payload.preview"), false);
+});
+
+test("source excerpts require an explicit preview mode selection", async () => {
+  const context = app();
+  run(
+    context,
+    `class FormData {
+      get(key) { return {message:"Summarize RAG",response_mode:"preview",max_passes:"2"}[key] ?? null; }
+      has() { return false; }
+    }
+    readResearchOptions=()=>{};
+    let submittedChat;
+    startJob=async(url,payload)=>{submittedChat=payload;};`,
+  );
+  await run(context, "sendChat({})");
+  assert.equal(run(context, "submittedChat.preview"), true);
+  run(context, "render=()=>{}; chatOptions.preview=true;");
+  await run(context, 'handleAction({dataset:{action:"new-chat"}})');
+  assert.equal(run(context, "chatOptions.preview"), false);
+});
+
+test("generated answers require a model instead of silently returning excerpts", async () => {
+  const context = app();
+  run(
+    context,
+    `class FormData {
+      get(key) { return {message:"Summarize RAG",response_mode:"answer",max_passes:"2"}[key] ?? null; }
+      has() { return false; }
+    }
+    readResearchOptions=()=>{};
+    startJob=async()=>{throw Error("A job should not be submitted");};`,
+  );
+  await assert.rejects(run(context, "sendChat({})"), /Choose an answer model/);
+});
+
 test("a newly discovered running job is attached to its inline stage without a top banner", async () => {
   const context = app();
   run(

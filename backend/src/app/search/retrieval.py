@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from pathlib import Path
 
@@ -206,6 +207,37 @@ def catalog(index, limit=200):
         and settings["time_end"]["filterable"]
         and any(c["filter_metadata"]["time_start"] is not None for c in chunks),
     }
+
+def explicit_agent_filters(proposed, question):
+    text = re.sub(r"\s+", " ", question.casefold().replace("_", " "))
+
+    def mentioned(value):
+        value = re.sub(r"\s+", " ", str(value).casefold().replace("_", " "))
+        return bool(re.search(r"(?<!\w)" + re.escape(value) + r"s?(?!\w)", text))
+
+    result = {}
+    for name, value in clean(proposed).items():
+        if name == "pages" and not re.search(r"\bpages?\b", text):
+            continue
+        if isinstance(value, list):
+            selected = [item for item in value if mentioned(item)]
+            if selected:
+                result[name] = selected
+        elif isinstance(value, dict):
+            selected = {
+                key: item for key, item in value.items() if mentioned(key) and mentioned(item)
+            }
+            if selected:
+                result[name] = selected
+        elif mentioned(value) and (
+            name.startswith("page")
+            and re.search(r"\bpages?\b", text)
+            or name.startswith("time")
+            and re.search(r"\b(time|seconds?|minutes?)\b", text)
+            or mentioned(name)
+        ):
+            result[name] = value
+    return result
 
 def validate_agent_filters(index, proposed):
     f = clean(proposed)

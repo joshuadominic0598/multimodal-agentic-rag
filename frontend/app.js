@@ -708,12 +708,21 @@ function research() {
   return (
     header(
       "Ask your knowledge.",
-      "Clarify the question. Investigate the source. Keep the evidence.",
+      "Ask about the selected document. Investigate the source. Keep the evidence.",
       `<button class="btn" data-action="new-chat">＋ New chat</button>`,
     ) +
     selector() +
     capabilityNotice() +
-    `<div class="split"><div><div class="chat-area" id="chat-area">${messages.length ? messages.map((m) => `<div class="message ${m.role}"><div class="message-label">${m.role === "user" ? "YOU" : "✧ RESEARCH AGENT"}</div>${m.role === "assistant" ? formatText(m.content) : esc(m.content)}</div>`).join("") : `<div class="chat-welcome"><div class="symbol">✧</div><h2>Where should we look?</h2><p>Ask about your document’s text, visuals or tables. I’ll clarify the scope before investigating.</p>${["Explain the key ideas and cite the source.", "What do the charts and tables tell us?", "Find the most useful sections for my project."].map((t) => `<button class="suggestion" data-action="suggest" data-text="${esc(t)}">${t} ↗</button>`).join("")}</div>`}</div>${pending ? `<div class="note mb">Clarification requested for: <b>${esc(pending.original_question)}</b><br>Reply below, or continue with the whole document.</div>` : ""}<form id="chat-form"><div class="composer"><textarea id="chat-message" name="message" placeholder="${pending ? "Tell me the scope or detail you want…" : "Ask a question about " + esc(d.name) + "…"}" required></textarea><div class="composer-footer"><span class="chat-options">${pending ? "Your reply sets the scope" : "Answers include original source references"}</span><div class="actions">${pending ? '<button type="button" class="btn small" data-action="clarify-default">Whole document</button>' : ""}<button class="btn primary" type="submit">${pending ? "Investigate →" : "Ask Agentic RAG ↗"}</button></div></div></div>${retrievalControls()}<div class="grid two section-space"><div class="field"><label for="chat-connection">Answer model</label><select id="chat-connection" name="connection_id">${options(state.connections, chatOptions.connection_id ?? state.settings.active_connection, "Source retrieval preview only")}</select></div><div class="field"><label for="chat-passes">Maximum investigation passes</label><select id="chat-passes" name="max_passes">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${chatOptions.max_passes === n ? "selected" : ""}>${n} · ${["", "economical", "standard", "thorough", "extended"][n]}</option>`).join("")}</select></div></div><div class="actions chat-options">${check("Retrieval preview (no generated answer)", "preview", chatOptions.preview)}${check("Generate a new illustration (requires image model)", "generate_image", chatOptions.generate_image)}</div></form><div class="card section-space"><details><summary>Memory, skills & tools</summary><div><div class="note mb">Short-term context: recent turns in this chat. Long-term memory: document-scoped preferences and a visible record of the latest research question. Memory is context, not source evidence.</div><div class="actions mb"><button class="btn small" data-action="show-memory">Manage memory</button><button class="btn small" data-action="show-sessions">Open a previous chat</button></div>${Object.entries(
+    `<div class="split"><div><div class="chat-area" id="chat-area">${messages.length ? messages.map((m) => `<div class="message ${m.role}"><div class="message-label">${m.role === "user" ? "YOU" : "✧ RESEARCH AGENT"}</div>${m.role === "assistant" ? formatText(m.content) : esc(m.content)}</div>`).join("") : `<div class="chat-welcome"><div class="symbol">✧</div><h2>Where should we look?</h2><p>Ask about your document’s text, visuals or tables. I’ll use the selected working document unless you specify a narrower scope.</p>${["Explain the key ideas and cite the source.", "What do the charts and tables tell us?", "Find the most useful sections for my project."].map((t) => `<button class="suggestion" data-action="suggest" data-text="${esc(t)}">${t} ↗</button>`).join("")}</div>`}</div>${pending ? `<div class="note mb">Clarification requested for: <b>${esc(pending.original_question)}</b><br>Reply below, or continue with the whole document.</div>` : ""}<form id="chat-form"><div class="composer"><textarea id="chat-message" name="message" placeholder="${pending ? "Tell me the scope or detail you want…" : "Ask a question about " + esc(d.name) + "…"}" required></textarea><div class="composer-footer"><span class="chat-options">${pending ? "Your reply sets the scope" : "Answers include original source references"}</span><div class="actions">${pending ? '<button type="button" class="btn small" data-action="clarify-default">Whole document</button>' : ""}<button class="btn primary" type="submit">${pending ? "Investigate →" : "Ask Agentic RAG ↗"}</button></div></div></div>${retrievalControls()}<div class="section-space">${selectField(
+      "Response mode",
+      "response_mode",
+      [
+        ["answer", "Generated answer · explain with citations"],
+        ["preview", "Retrieval preview · source excerpts only"],
+      ],
+      chatOptions.preview ? "preview" : "answer",
+      "Generated answers summarize and explain your selected document. Preview only shows matching source excerpts.",
+    )}</div><div class="grid two section-space"><div class="field"><label for="chat-connection">Answer model</label><select id="chat-connection" name="connection_id">${options(state.connections, chatOptions.connection_id ?? state.settings.active_connection, "Choose an answer model")}</select></div><div class="field"><label for="chat-passes">Maximum investigation passes</label><select id="chat-passes" name="max_passes">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${chatOptions.max_passes === n ? "selected" : ""}>${n} · ${["", "economical", "standard", "thorough", "extended"][n]}</option>`).join("")}</select></div></div><div class="actions chat-options">${check("Generate a new illustration (requires image model)", "generate_image", chatOptions.generate_image)}</div></form><div class="card section-space"><details><summary>Memory, skills & tools</summary><div><div class="note mb">Short-term context: recent turns in this chat. Long-term memory: document-scoped preferences and a visible record of the latest research question. Memory is context, not source evidence.</div><div class="actions mb"><button class="btn small" data-action="show-memory">Manage memory</button><button class="btn small" data-action="show-sessions">Open a previous chat</button></div>${Object.entries(
       state.skills,
     )
       .map(([k, v]) => `<p class="small mb"><b>${esc(k)}</b><br>${esc(v)}</p>`)
@@ -1280,10 +1289,10 @@ async function sendChat(form, defaultScope = false) {
     message: pending ? pending.original_question : message,
     clarified: !!pending,
     clarification_answer: pending ? message : "",
-    clarify_policy: "always",
+    clarify_policy: "when_needed",
     max_passes: Number(data.get("max_passes")),
     max_calls: { low: 5, medium: 12, high: 30 }[chatOptions.effort],
-    preview: data.has("preview"),
+    preview: data.get("response_mode") === "preview",
     generate_image: data.has("generate_image"),
     filters: chatOptions.filters,
     search_mode: chatOptions.search_mode,
@@ -1292,6 +1301,10 @@ async function sendChat(form, defaultScope = false) {
     effort: chatOptions.effort,
     context_chars: chatOptions.context_chars,
   };
+  if (!payload.preview && !payload.connection_id)
+    throw Error(
+      "Choose an answer model to generate an explanation, or select Retrieval preview for source excerpts only.",
+    );
   chatOptions = {
     ...chatOptions,
     connection_id: payload.connection_id,
@@ -1407,6 +1420,7 @@ async function handleAction(button) {
   }
   if (a === "new-chat") {
     chatOptions.filters = {};
+    chatOptions.preview = false;
     sessionId = "";
     pending = null;
     messages = [];
@@ -2390,7 +2404,7 @@ function readResearchOptions(form) {
       : null,
     connection_id: data.get("connection_id") || "",
     max_passes: Number(data.get("max_passes") || 2),
-    preview: data.has("preview"),
+    preview: data.get("response_mode") === "preview",
     generate_image: data.has("generate_image"),
   });
   return chatOptions;

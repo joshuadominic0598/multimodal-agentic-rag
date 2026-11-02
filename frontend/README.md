@@ -25,6 +25,8 @@ The [main README](../README.md) is the product walkthrough. Server setup, data f
 
 Processing actions keep their status inside the extraction, chunk-preview or build section. Filling bars use completed-work checkpoints, not elapsed-time guesses; 100% is reserved for successful completion. Job discovery runs while Processing is open and recovers work started in another tab. Provider pacing waits appear with a countdown. Extraction/indexing jobs do not also produce a top-of-page banner.
 
+Research uses the selected working document as its default scope and asks follow-up questions only when needed. Response mode starts with a generated answer; retrieval preview requires an explicit selection. Generating an answer requires an answer model, and starting a new chat resets preview mode. Broad questions receive a cited topic overview with an invitation to explore further.
+
 The index-field table has a fixed-height scroll area before the single build action. The knowledge inspector shows the selected saved index or chunk preview, its searchable fields and exact keyword input, every chunk through search and pagination, and linked original visual elements with descriptions, OCR and table rows. The inspector loads the extraction revision pinned by that snapshot; unsaved field edits cannot change its displayed schema.
 
 ## Run and edit

@@ -121,7 +121,7 @@ class Question(Strict):
     session_id: str = ""
     message: str = Field(min_length=1, max_length=6000)
     clarified: bool = False
-    clarify_policy: Literal["always", "when_needed"] = "always"
+    clarify_policy: Literal["always", "when_needed"] = "when_needed"
     clarification_answer: str = Field(default="", max_length=3000)
     top_k: int = Field(default=6, ge=1, le=15)
     max_passes: int = Field(default=2, ge=1, le=4)

@@ -162,6 +162,19 @@ def test_index_field_choices_control_keyword_index(doc, cfg, fake_vectors):
     assert ix.search(index, "evidence", p.Budget("schema-filename"), 4, search_mode="keyword")
     assert rt.catalog(index)["fields"]["tags"]["values"][0]["value"] == "checked"
 
+def test_model_filters_require_explicit_values_in_the_question():
+    proposed = {"pages": [5], "sections": ["Chunking Strategies"], "kinds": ["table"]}
+    assert rt.explicit_agent_filters(proposed, "Tell me what this document says about RAG") == {}
+    assert rt.explicit_agent_filters(proposed, "Explain the tables on page 5") == {
+        "pages": [5],
+        "kinds": ["table"],
+    }
+    assert rt.explicit_agent_filters(proposed, "Explain Chunking Strategies") == {
+        "sections": ["Chunking Strategies"]
+    }
+    assert rt.explicit_agent_filters({"pages": [5]}, "List 5 RAG topics") == {}
+    assert rt.explicit_agent_filters({"pages": [5]}, "Explain page 15") == {}
+
 def test_agent_cannot_widen_user_filters(indexed, monkeypatch):
     from app.agents.research import answer
 
@@ -211,6 +224,7 @@ def test_clarification_preserves_initial_retrieval_scope(indexed):
         {
             "document_id": doc["id"],
             "message": "Explain solar",
+            "clarify_policy": "always",
             "filters": {"kinds": ["text"]},
             "search_mode": "keyword",
             "effort": "low",
