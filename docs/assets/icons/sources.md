@@ -12,4 +12,4 @@ Brand names and marks identify the technology components in this architecture.
 - [gemini](gemini.svg): [original asset](https://raw.githubusercontent.com/simple-icons/simple-icons/13.0.0/icons/googlegemini.svg)
 - [ollama](ollama.svg): [original asset](https://unpkg.com/@lobehub/icons-static-svg@1.94.0/icons/ollama.svg) (LobeHub Icons)
 
-- [Application icon](app.svg): original Document Knowledge Studio icon, shared with the frontend.
+- [Application icon](app.svg): original Private File Knowledge Studio icon, shared with the frontend.

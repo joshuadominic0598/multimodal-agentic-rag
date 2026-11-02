@@ -137,7 +137,7 @@ def node(x, y, w, h, title, lines, brand=None, color=BLUE, title_size=33):
 rect(0, 0, W, H, fill=BG, stroke=BG, radius=0)
 icon("app", 85, 83, 78)
 text(185, 135, "Agentic RAG", 60, TEXT, True)
-text(185, 185, "Document Knowledge Studio · Azure workflow", 30, MUTED)
+text(185, 185, "Private File Knowledge Studio · Azure workflow", 30, MUTED)
 rect(1800, 83, 690, 82, fill=LANE)
 text(2145, 133, "YOUR EXISTING AZURE RESOURCES", 25, BLUE, True, anchor="middle")
 

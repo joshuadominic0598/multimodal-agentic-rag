@@ -16,7 +16,7 @@ from app.services.jobs import lifespan
 providers.bootstrap()
 app = FastAPI(
     lifespan=lifespan,
-    title="Agentic RAG · Document Knowledge Studio",
+    title="Agentic RAG · Private File Knowledge Studio",
     version="1.0.0",
     docs_url="/api/docs",
 )

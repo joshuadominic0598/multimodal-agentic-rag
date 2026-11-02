@@ -1,17 +1,17 @@
 <p align="center"><img src="frontend/icon.svg" width="76" alt="Agentic RAG icon"></p>
 
 <h1 align="center">Agentic RAG</h1>
-<p align="center"><strong>Document Knowledge Studio</strong><br>Bring your documents. Explore what is inside. Ask better questions.</p>
+<p align="center"><strong>Private File Knowledge Studio</strong><br>Bring your files. Explore what is inside. Ask better questions.</p>
 
-<p align="center">📄 Documents &nbsp; · &nbsp; 📊 Tables & charts &nbsp; · &nbsp; 🖼️ Images &nbsp; · &nbsp; 🎧 Recordings &nbsp; · &nbsp; 💻 Code</p>
+<p align="center">📄 Documents &nbsp; · &nbsp; 📊 Tables & charts &nbsp; · &nbsp; 🖼️ Images &nbsp; · &nbsp; 🎧 Audio &nbsp; · &nbsp; 🎬 Video &nbsp; · &nbsp; 🌐 Webpages &nbsp; · &nbsp; 💻 Code</p>
 
-Your notes, reports, spreadsheets and recordings hold more than paragraphs. They hold diagrams, numbers, screenshots, source code and the context around them. Agentic RAG turns a working document into a knowledge workspace you can inspect, search and have a conversation with—with links back to the original evidence.
+Your documents, spreadsheets, webpages, code and audio/video recordings hold more than paragraphs. They hold diagrams, numbers, screenshots, conversations and the context around them. Agentic RAG turns your files into a knowledge workspace you can inspect, search and have a conversation with—with links back to the original evidence.
 
-![Document Knowledge Studio](docs/assets/studio-preview.png)
+![Private File Knowledge Studio](docs/assets/studio-preview.png)
 
 ## From “where did I put that?” to “show me the evidence”
 
-**Bring something you want to understand.** Upload a PDF, Word document, spreadsheet, image or recording. Import a webpage or a software project folder. Choose a working source and keep the original alongside it.
+**Bring something you want to understand.** Upload a PDF, Word document, spreadsheet, image, audio file or video. Import a webpage or a software project folder. Choose a working source and keep the original alongside it.
 
 **See what the app found.** Explore text, headings, tables, figures, images and transcript segments before you build your index. Open the original page, inspect a table or follow a recording timestamp. You get to review the extraction rather than guess what the model saw.
 
@@ -57,7 +57,7 @@ The app connects resources you already own. You review cloud operations before f
 
 ## Try your first conversation
 
-1. Run **`scripts/setup.command`** once for a fresh installation, then **`scripts/start.command`**. Open [Document Knowledge Studio](http://127.0.0.1:8020).
+1. Run **`scripts/setup.command`** once for a fresh installation, then **`scripts/start.command`**. Open [Private File Knowledge Studio](http://127.0.0.1:8020).
 2. Add a model in **Connections & settings**, or test the default local Ollama profile. For Azure, also connect your services in **Azure workspace**.
 3. Import a source in **Source library**. In **Processing studio**, choose your workflow and retrieval mode, inspect extraction, preview chunks and build the index.
 4. Open **Research agent**, ask a question and explore the answer's source references.

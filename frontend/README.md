@@ -41,7 +41,7 @@ Only working-source and pipeline preferences belong in browser local storage. Cr
 
 ## Appearance and source rendering
 
-Keep the fixed dark palette in this order: black, grey, blue, purple, orange. The sidebar uses **Agentic RAG** and **Document Knowledge Studio** with the original icon. Native controls use a dark color scheme. Maintain readable source cards, tables, code and modal content at narrow widths.
+Keep the fixed dark palette in this order: black, grey, blue, purple, orange. The sidebar uses **Agentic RAG** and **Private File Knowledge Studio** with the original icon. Native controls use a dark color scheme. Maintain readable source cards, tables, code and modal content at narrow widths.
 
 Source text is escaped before rendering. Imported HTML and code are served as downloads, rather than executed. Original image/table previews and audio/video timestamps stay attached to source cards. The UI distinguishes image understanding, image embedding and image generation; unsupported capabilities should remain visible to the user.
 
